@@ -32,11 +32,33 @@ import org.keycloak.common.util.PemUtils;
  * A AuthenticationMechanismFactory for the MicroProfile JWT RBAC
  */
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
+    /**
+     * This builds the JWTAuthMechanism with a JWTAuthContextInfo containing the issuer and signer public key needed
+     * to validate the token. This information is currently taken from the query parameters passed in via the
+     * web.xml/login-config/auth-method value. We may need a better way to do this in the future.
+     *
+     * TODO: externalize the {@link JWTAuthContextInfo#getExpGracePeriodSecs()}
+     *
+     * @param mechanismName - the login-config/auth-method, which will be MP-JWT for JWTAuthMechanism
+     * @param formParserFactory - unused form type of authentication factory
+     * @param properties - the query parameters from the web.xml/login-config/auth-method value. We expect an issuedBy
+     *                   and signerPubKey property to use for token validation.
+     * @return the JWTAuthMechanism
+     *
+     * @see JWTAuthContextInfo
+     */
     @Override
     public AuthenticationMechanism create(String mechanismName, FormParserFactory formParserFactory, Map<String, String> properties) {
         String issuedBy = properties.get("issuedBy");
+        if(issuedBy == null) {
+            throw new IllegalStateException("No issuedBy query parameter was found");
+        }
         String publicKeyPemEnc = properties.get("signerPubKey");
-        // https://issues.jboss.org/browse/WFLY-9135
+        if(publicKeyPemEnc == null) {
+            throw new IllegalStateException("No signerPubKey query parameter was found");
+        }
+
+        // Workaround the double decode issue; https://issues.jboss.org/browse/WFLY-9135
         String publicKeyPem = publicKeyPemEnc.replace(' ', '+');
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setIssuedBy(issuedBy);

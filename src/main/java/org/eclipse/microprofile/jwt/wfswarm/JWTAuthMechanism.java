@@ -56,6 +56,14 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         this.authContextInfo = authContextInfo;
     }
 
+    /**
+     * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this
+     * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as
+     * the authorization layers.
+     * @param exchange - the http request exchange object
+     * @param securityContext - the current security context that
+     * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication outcome.
+     */
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
@@ -73,6 +81,10 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         // Install the JWT principal as the caller
                         JWTAccount account = new JWTAccount(jwtPrincipal);
                         securityContext.authenticationComplete(account, "MP-JWT", false);
+                        /* We have to update the wildfly SecurityContext with an authenticated subject view in order for
+                            all of the container APIs and authorization layers to operate on the token authorization
+                            information.
+                        */
                         Subject subject = new Subject();
                         RoleGroup roles = commit(subject, jwtPrincipal);
                         org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
@@ -99,10 +111,10 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
     }
 
     /**
-     *
-     * @param bearerToken
-     * @return
-     * @throws ParseException
+     * Validate the bearer token passed in with the authorization header
+     * @param bearerToken - the input bearer token
+     * @return return the validated JWTCallerPrincipal
+     * @throws ParseException - thrown on token parse or validation failure
      */
     protected JWTCallerPrincipal validate(String bearerToken) throws ParseException {
         JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
@@ -111,10 +123,11 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
     }
 
     /**
-     *
-     * @param subject
-     * @param identity
-     * @return
+     * Called to populate the SecurityContext Subject with the identify and roles from the validated JWTCallerPrincipal
+     * @param subject - the SecurityContext Subject that is used by the containers
+     * @param identity - the validated JWTCallerPrincipal
+     * @return a RoleGroup summary of the roles associated with the Subject as this is used by the SecurityContext
+     *  SubjectInfo and used by authorization layers of the containers
      */
     protected RoleGroup commit(Subject subject, JWTCallerPrincipal identity) {
         Set<Principal> principals = subject.getPrincipals();
@@ -140,7 +153,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
     }
 
     /**
-     *
+     * Get the "CallerPrincipal" Group from the set of Subject principals
      * @param principals - subject principals set to search
      * @return the CallerPrincipal group if it exists, null otherwise
      */

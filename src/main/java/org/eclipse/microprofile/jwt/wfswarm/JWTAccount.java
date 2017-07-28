@@ -26,7 +26,7 @@ import io.undertow.security.idm.Account;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 
 /**
- * Representation of the caller account using the JWTCallerPrincipal
+ * Representation of the caller account using the JWTCallerPrincipal as an Undertow Account object.
  */
 public class JWTAccount implements Account {
     private JWTCallerPrincipal principal;

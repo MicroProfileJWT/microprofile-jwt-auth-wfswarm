@@ -18,10 +18,12 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.ConfigurableMavenResolverSystem;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import javax.ejb.EJB;
 import javax.security.enterprise.CallerPrincipal;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -37,9 +39,13 @@ import java.util.HashSet;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
+/**
+ *
+ */
 @RunWith(Arquillian.class)
 public class RolesAllowedTest {
 
+    private static String token;
     @ArquillianResource
     private URL baseURL;
 
@@ -65,6 +71,7 @@ public class RolesAllowedTest {
                 .addPackage(JWTCallerPrincipal.class.getPackage())
                 .addClass(JWTPrincipal.class)
                 .addClass(CallerPrincipal.class)
+
                 .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
                 .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
@@ -77,6 +84,10 @@ public class RolesAllowedTest {
         return webArchive;
     }
 
+    @BeforeClass
+    public static void generateToken() throws Exception {
+        token = TokenUtils.generateTokenString("/RolesEndpoint.json");
+    }
     @Test
     public void callEchoNoAuth() throws Exception {
         String uri = baseURL.toExternalForm() + "/endp/echo";
@@ -129,7 +140,6 @@ public class RolesAllowedTest {
 
     @Test
     public void callEcho() throws Exception {
-        String token = TokenUtils.generateTokenString("/RolesEndpoint.json");
         System.out.printf("jwt: %s\n", token);
 
         String uri = baseURL.toExternalForm() + "/endp/echo";
@@ -145,7 +155,6 @@ public class RolesAllowedTest {
 
     @Test
     public void callEcho2() throws Exception {
-        String token = TokenUtils.generateTokenString("/RolesEndpoint.json");
         System.out.printf("jwt: %s\n", token);
 
         String uri = baseURL.toExternalForm() + "/endp/echo2";
@@ -156,6 +165,92 @@ public class RolesAllowedTest {
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
         String reply = response.readEntity(String.class);
         Assert.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatus());
+    }
+
+    @Test
+    public void getPrincipalClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getPrincipalClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        String[] ifaces = reply.split(",");
+        boolean hasJWTPrincipal = false;
+        for(String iface : ifaces) {
+            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+        }
+        Assert.assertTrue("PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+    }
+    @Test
+    public void getSubjectClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getSubjectClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+    }
+
+    @Test
+    public void getServletPrincipalClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/ServiceServlet/getPrincipalClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        String[] ifaces = reply.split(",");
+        boolean hasJWTPrincipal = false;
+        for(String iface : ifaces) {
+            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+        }
+        Assert.assertTrue("PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+    }
+
+    @Test
+    public void getServletSubjectClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/ServiceServlet/getSubject";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+    }
+
+    @Test
+    public void testEJBPrincipalClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getEJBPrincipalClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        String[] ifaces = reply.split(",");
+        boolean hasJWTPrincipal = false;
+        for(String iface : ifaces) {
+            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+        }
+        Assert.assertTrue("EJB PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+    }
+
+    @Test
+    public void getEJBSubjectClass() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getEJBSubjectClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
     }
 
     @Test
