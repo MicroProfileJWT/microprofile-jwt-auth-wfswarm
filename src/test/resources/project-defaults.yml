@@ -1,5 +1,8 @@
 # A project defaults for use with MP-JWT auth-method that include additional role mapping
 swarm:
+  # This does not work as the resolver runs before config, here to remind -Dswarm.resolver.offline=true to avoid remot repos
+  resolver:
+    offline: true
   security:
     security-domains:
       jwt-jaspi:
