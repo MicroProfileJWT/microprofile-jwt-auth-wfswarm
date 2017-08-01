@@ -23,7 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.ejb.EJB;
 import javax.security.enterprise.CallerPrincipal;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
