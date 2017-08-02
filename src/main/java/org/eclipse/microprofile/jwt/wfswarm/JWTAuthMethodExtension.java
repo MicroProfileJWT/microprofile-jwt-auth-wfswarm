@@ -19,6 +19,8 @@
  */
 package org.eclipse.microprofile.jwt.wfswarm;
 
+import java.net.URL;
+
 import javax.servlet.ServletContext;
 
 import io.undertow.servlet.ServletExtension;
@@ -29,7 +31,7 @@ import io.undertow.servlet.api.DeploymentInfo;
  */
 public class JWTAuthMethodExtension implements ServletExtension {
     /**
-     * This registeres the JWTAuthMechanismFactory under the "MP-JWT" mechanism name
+     * This registers the JWTAuthMechanismFactory under the "MP-JWT" mechanism name
      * @param deploymentInfo - the deployment to augment
      * @param servletContext - the ServletContext for the deployment
      */

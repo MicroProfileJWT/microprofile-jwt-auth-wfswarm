@@ -19,6 +19,11 @@
  */
 package org.eclipse.microprofile.jwt.wfswarm;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Map;
 
@@ -26,12 +31,15 @@ import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanismFactory;
 import io.undertow.server.handlers.form.FormParserFactory;
 import org.eclipse.microprofile.jwt.principal.JWTAuthContextInfo;
+import org.jboss.logging.Logger;
 import org.keycloak.common.util.PemUtils;
 
 /**
  * A AuthenticationMechanismFactory for the MicroProfile JWT RBAC
  */
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
+    private static Logger log = Logger.getLogger(JWTAuthMechanismFactory.class);
+
     /**
      * This builds the JWTAuthMechanism with a JWTAuthContextInfo containing the issuer and signer public key needed
      * to validate the token. This information is currently taken from the query parameters passed in via the
@@ -49,13 +57,23 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
      */
     @Override
     public AuthenticationMechanism create(String mechanismName, FormParserFactory formParserFactory, Map<String, String> properties) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+
         String issuedBy = properties.get("issuedBy");
         if(issuedBy == null) {
-            throw new IllegalStateException("No issuedBy query parameter was found");
+            // Try the /META-INF/MP-JWT-ISSUER content
+            URL issURL = loader.getResource("/META-INF/MP-JWT-ISSUER");
+            if(issURL == null)
+                throw new IllegalStateException("No issuedBy parameter was found");
+            issuedBy = readURLContent(issURL);
         }
         String publicKeyPemEnc = properties.get("signerPubKey");
         if(publicKeyPemEnc == null) {
-            throw new IllegalStateException("No signerPubKey query parameter was found");
+            // Try the /META-INF/MP-JWT-SIGNER content
+            URL pkURL = loader.getResource("/META-INF/MP-JWT-SIGNER");
+            if(pkURL == null)
+                throw new IllegalStateException("No signerPubKey parameter was found");
+            publicKeyPemEnc = readURLContent(pkURL);
         }
 
         // Workaround the double decode issue; https://issues.jboss.org/browse/WFLY-9135
@@ -66,5 +84,17 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
         contextInfo.setSignerKey(pk);
 
         return new JWTAuthMechanism(contextInfo);
+    }
+
+    private String readURLContent(URL url) {
+        String content = null;
+        try {
+            InputStream is = url.openStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            content = reader.readLine();
+        } catch (IOException e) {
+            log.warnf("Failed to read content from: %s, error=%s", url, e.getMessage());
+        }
+        return content;
     }
 }
