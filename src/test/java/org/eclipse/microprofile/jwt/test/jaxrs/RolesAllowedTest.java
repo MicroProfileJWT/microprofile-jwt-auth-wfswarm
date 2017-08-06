@@ -51,7 +51,7 @@ public class RolesAllowedTest {
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
-        System.setProperty("swarm.debug.port", "8888");
+        //System.setProperty("swarm.debug.port", "8888");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-ri:1.0-SNAPSHOT").withTransitivity().asFile();
