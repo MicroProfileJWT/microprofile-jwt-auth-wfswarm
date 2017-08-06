@@ -32,7 +32,6 @@ import io.undertow.security.api.AuthenticationMechanismFactory;
 import io.undertow.server.handlers.form.FormParserFactory;
 import org.eclipse.microprofile.jwt.principal.JWTAuthContextInfo;
 import org.jboss.logging.Logger;
-import org.keycloak.common.util.PemUtils;
 
 /**
  * A AuthenticationMechanismFactory for the MicroProfile JWT RBAC
@@ -80,21 +79,31 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
         String publicKeyPem = publicKeyPemEnc.replace(' ', '+');
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
         contextInfo.setIssuedBy(issuedBy);
-        RSAPublicKey pk = (RSAPublicKey) PemUtils.decodePublicKey(publicKeyPem);
-        contextInfo.setSignerKey(pk);
+        try {
+            RSAPublicKey pk = (RSAPublicKey) KeyUtils.decodePublicKey(publicKeyPem);
+            contextInfo.setSignerKey(pk);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
 
         return new JWTAuthMechanism(contextInfo);
     }
 
     private String readURLContent(URL url) {
-        String content = null;
+        StringBuilder content = new StringBuilder();
         try {
             InputStream is = url.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            content = reader.readLine();
+            String line = reader.readLine();
+            while(line != null) {
+                content.append(line);
+                content.append('\n');
+                line = reader.readLine();
+            }
+            reader.close();
         } catch (IOException e) {
             log.warnf("Failed to read content from: %s, error=%s", url, e.getMessage());
         }
-        return content;
+        return content.toString();
     }
 }

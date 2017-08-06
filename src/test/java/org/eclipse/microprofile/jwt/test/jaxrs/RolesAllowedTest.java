@@ -6,7 +6,7 @@ import org.eclipse.microprofile.jwt.JWTPrincipal;
 import org.eclipse.microprofile.jwt.impl.DefaultJWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
-import org.eclipse.microprofile.jwt.test.util.TokenUtils;
+import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.eclipse.microprofile.jwt.wfswarm.JWTAuthMethodExtension;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -50,20 +50,18 @@ public class RolesAllowedTest {
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
+        System.setProperty("swarm.resolver.offline", "true");
+        System.setProperty("swarm.debug.port", "8888");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
-        File core = resolver.resolve("org.keycloak:keycloak-core:3.2.0.Final").withoutTransitivity().asSingleFile();
-        File common = resolver.resolve("org.keycloak:keycloak-common:3.2.0.Final").withoutTransitivity().asSingleFile();
-        File json = resolver.resolve("com.fasterxml.jackson.core:jackson-core:jar:2.5.4").withoutTransitivity().asSingleFile();
-        File[] jsonb = resolver.resolve("com.fasterxml.jackson.core:jackson-databind:jar:2.5.4").withTransitivity().asFile();
-        File bc = resolver.resolve("org.bouncycastle:bcprov-jdk15on:1.52").withoutTransitivity().asSingleFile();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
-        File ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-ri:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
+        File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-ri:1.0-SNAPSHOT").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
-                .addAsLibraries(core, common, json, ri, wfswarmauth, bc)
-                .addAsLibraries(jsonb)
+                .addAsLibraries(wfswarmauth)
+                .addAsLibraries(ri)
                 .addAsResource(publicKey, "/publicKey.pem")
+                .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
                 .addAsResource("project-defaults.yml", "/project-defaults.yml")
                 //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
                 .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())

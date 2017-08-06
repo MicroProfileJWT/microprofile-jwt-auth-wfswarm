@@ -19,7 +19,7 @@
 
     <groupId>org.eclipse.microprofile.jwt</groupId>
     <artifactId>jwt-auth-wfswarm</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <name>MicroProfile JWT Auth WFSwarm Implementation</name>
 
     <properties>
@@ -55,7 +55,7 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.jwt.tck</groupId>
+            <groupId>org.eclipse.microprofile.jwt</groupId>
             <artifactId>microprofile-jwt-auth-tck</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

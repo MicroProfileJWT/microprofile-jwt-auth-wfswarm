@@ -134,7 +134,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         principals.add(identity);
         // Add the roles and groups from the token
         SimpleGroup rolesGroup = new SimpleGroup("Roles");
-        for(String role : identity.getRoles()) {
+        for(String role : identity.getGroups()) {
             rolesGroup.addMember(new SimplePrincipal(role));
         }
         for(String group : identity.getGroups()) {

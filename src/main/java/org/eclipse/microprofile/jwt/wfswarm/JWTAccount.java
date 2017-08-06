@@ -42,6 +42,6 @@ public class JWTAccount implements Account {
 
     @Override
     public Set<String> getRoles() {
-        return principal.getRoles();
+        return principal.getGroups();
     }
 }
