@@ -25,6 +25,7 @@ import java.util.Set;
 import io.undertow.security.idm.Account;
 import org.eclipse.microprofile.jwt.JWTPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
+import org.wildfly.extension.undertow.security.AccountImpl;
 
 /**
  * Representation of the caller account using the JWTCallerPrincipal as an Undertow Account object.
@@ -47,4 +48,5 @@ public class JWTAccount implements Account {
     public Set<String> getRoles() {
         return delegate.getRoles();
     }
+
 }

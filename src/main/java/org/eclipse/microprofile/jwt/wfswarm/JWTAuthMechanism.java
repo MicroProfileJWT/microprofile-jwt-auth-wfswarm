@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.security.acl.Group;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -89,15 +90,13 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         JWTPrincipal jwtPrincipal = (JWTPrincipal) account.getPrincipal();
                         JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
                         securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
-                        /* We have to update the wildfly SecurityContext with an authenticated subject view in order for
-                            all of the container APIs and authorization layers to operate on the token authorization
-                            information.
-                        Subject subject = new Subject();
-                        RoleGroup roles = commit(subject, jwtPrincipal);
+                        // Workaround authenticated JWTPrincipal not being installed as user principal
+                        // https://issues.jboss.org/browse/WFLY-9212
                         org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
+                        Subject subject = jbSC.getUtil().getSubject();
                         jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
+                        RoleGroup roles = extract(subject);
                         jbSC.getUtil().setRoles(roles);
-                        */
                         UndertowLogger.SECURITY_LOGGER.infof("Authenticated caller(%s) for path(%s) with roles: %s",
                                 credential.getName(), exchange.getRequestPath(), account.getRoles());
                         return AuthenticationMechanismOutcome.AUTHENTICATED;
@@ -120,53 +119,18 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         return new ChallengeResult(true, UNAUTHORIZED);
     }
 
-
     /**
-     * Called to populate the SecurityContext Subject with the identify and roles from the validated JWTCallerPrincipal
-     * @param subject - the SecurityContext Subject that is used by the containers
-     * @param identity - the validated JWTCallerPrincipal
-     * @return a RoleGroup summary of the roles associated with the Subject as this is used by the SecurityContext
-     *  SubjectInfo and used by authorization layers of the containers
+     * Extract the Roles group and return it as a RoleGroup
+     * @param subject authenticated subject
+     * @return RoleGroup from "Roles"
      */
-    protected RoleGroup commit(Subject subject, JWTCallerPrincipal identity) {
-        Set<Principal> principals = subject.getPrincipals();
-        principals.add(identity);
-        // Add the roles and groups from the token
-        SimpleGroup rolesGroup = new SimpleGroup("Roles");
-        for(String role : identity.getGroups()) {
-            rolesGroup.addMember(new SimplePrincipal(role));
-        }
-        for(String group : identity.getGroups()) {
-            principals.add(new SimpleGroup(group));
-        }
-        principals.add(rolesGroup);
-        // add the CallerPrincipal group if none has been added in getRoleSets
-        Group callerGroup = getCallerPrincipalGroup(principals);
-        if (callerGroup == null) {
-            callerGroup = new SimpleGroup(SecurityConstants.CALLER_PRINCIPAL_GROUP);
-            callerGroup.addMember(identity);
-            principals.add(callerGroup);
-        }
+    protected RoleGroup extract(Subject subject) {
+        Optional<Principal> match = subject.getPrincipals()
+                .stream()
+                .filter(g -> g.getName().equals(SecurityConstants.ROLES_IDENTIFIER))
+                .findFirst();
+        Group rolesGroup = (Group) match.get();
         RoleGroup roles = new SimpleRoleGroup( rolesGroup );
         return roles;
-    }
-
-    /**
-     * Get the "CallerPrincipal" Group from the set of Subject principals
-     * @param principals - subject principals set to search
-     * @return the CallerPrincipal group if it exists, null otherwise
-     */
-    private Group getCallerPrincipalGroup(Set<Principal> principals) {
-        Group callerGroup = null;
-        for (Principal principal : principals) {
-            if (principal instanceof Group) {
-                Group group = Group.class.cast(principal);
-                if (group.getName().equals(SecurityConstants.CALLER_PRINCIPAL_GROUP)) {
-                    callerGroup = group;
-                    break;
-                }
-            }
-        }
-        return callerGroup;
     }
 }
