@@ -30,11 +30,15 @@ import javax.security.auth.Subject;
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
+import org.eclipse.microprofile.jwt.JWTPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTAuthContextInfo;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.ParseException;
+import org.eclipse.microprofile.jwt.wfswarm.jaas.JWTCredential;
 import org.jboss.security.SecurityConstants;
 import org.jboss.security.SecurityContextAssociation;
 import org.jboss.security.SimpleGroup;
@@ -51,6 +55,7 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  */
 public class JWTAuthMechanism implements AuthenticationMechanism {
     private JWTAuthContextInfo authContextInfo;
+    private IdentityManager identityManager;
 
     public JWTAuthMechanism(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
@@ -75,21 +80,26 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                     if(UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
                         UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                     try {
-                        JWTCallerPrincipal jwtPrincipal = validate(bearerToken);
+                        identityManager = securityContext.getIdentityManager();
+                        JWTCredential credential = new JWTCredential(bearerToken, authContextInfo);
                         if(UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
-                            UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", jwtPrincipal);
+                            UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                         // Install the JWT principal as the caller
-                        JWTAccount account = new JWTAccount(jwtPrincipal);
-                        securityContext.authenticationComplete(account, "MP-JWT", false);
+                        Account account = identityManager.verify(credential.getName(), credential);
+                        JWTPrincipal jwtPrincipal = (JWTPrincipal) account.getPrincipal();
+                        JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
+                        securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
                         /* We have to update the wildfly SecurityContext with an authenticated subject view in order for
                             all of the container APIs and authorization layers to operate on the token authorization
                             information.
-                        */
                         Subject subject = new Subject();
                         RoleGroup roles = commit(subject, jwtPrincipal);
                         org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
                         jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
                         jbSC.getUtil().setRoles(roles);
+                        */
+                        UndertowLogger.SECURITY_LOGGER.infof("Authenticated caller(%s) for path(%s) with roles: %s",
+                                credential.getName(), exchange.getRequestPath(), account.getRoles());
                         return AuthenticationMechanismOutcome.AUTHENTICATED;
                     } catch (Exception e) {
                         UndertowLogger.SECURITY_LOGGER.debugf(e, "Failed to validate JWT bearer token");
@@ -110,17 +120,6 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         return new ChallengeResult(true, UNAUTHORIZED);
     }
 
-    /**
-     * Validate the bearer token passed in with the authorization header
-     * @param bearerToken - the input bearer token
-     * @return return the validated JWTCallerPrincipal
-     * @throws ParseException - thrown on token parse or validation failure
-     */
-    protected JWTCallerPrincipal validate(String bearerToken) throws ParseException {
-        JWTCallerPrincipalFactory factory = JWTCallerPrincipalFactory.instance();
-        JWTCallerPrincipal callerPrincipal = factory.parse(bearerToken, authContextInfo);
-        return callerPrincipal;
-    }
 
     /**
      * Called to populate the SecurityContext Subject with the identify and roles from the validated JWTCallerPrincipal

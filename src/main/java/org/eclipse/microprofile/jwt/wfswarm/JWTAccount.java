@@ -23,16 +23,19 @@ import java.security.Principal;
 import java.util.Set;
 
 import io.undertow.security.idm.Account;
+import org.eclipse.microprofile.jwt.JWTPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 
 /**
  * Representation of the caller account using the JWTCallerPrincipal as an Undertow Account object.
  */
 public class JWTAccount implements Account {
-    private JWTCallerPrincipal principal;
+    private JWTPrincipal principal;
+    private Account delegate;
 
-    public JWTAccount(JWTCallerPrincipal principal) {
+    public JWTAccount(JWTPrincipal principal, Account delegate) {
         this.principal = principal;
+        this.delegate = delegate;
     }
 
     @Override
@@ -42,6 +45,6 @@ public class JWTAccount implements Account {
 
     @Override
     public Set<String> getRoles() {
-        return principal.getGroups();
+        return delegate.getRoles();
     }
 }

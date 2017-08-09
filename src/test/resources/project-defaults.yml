@@ -11,8 +11,8 @@ swarm:
             roles-lm-stack:
               login-modules:
                 - login-module: rm
-                  code: RoleMapping
-                  flag: optional
+                  code: org.eclipse.microprofile.jwt.wfswarm.jaas.JWTLoginModule
+                  flag: required
                   module-options:
                     rolesProperties: jwt-roles.properties
           auth-modules:

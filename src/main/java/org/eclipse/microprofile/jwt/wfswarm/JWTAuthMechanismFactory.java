@@ -65,6 +65,9 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
             if(issURL == null)
                 throw new IllegalStateException("No issuedBy parameter was found");
             issuedBy = readURLContent(issURL);
+            if(issuedBy == null)
+                throw new IllegalStateException("No issuedBy parameter was found");
+            issuedBy = issuedBy.trim();
         }
         String publicKeyPemEnc = properties.get("signerPubKey");
         if(publicKeyPemEnc == null) {

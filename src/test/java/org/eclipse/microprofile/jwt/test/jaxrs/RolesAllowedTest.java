@@ -9,6 +9,7 @@ import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.eclipse.microprofile.jwt.wfswarm.JWTAuthMethodExtension;
 import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.Filters;
@@ -51,7 +52,8 @@ public class RolesAllowedTest {
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
-        //System.setProperty("swarm.debug.port", "8888");
+        System.setProperty("swarm.debug.port", "8888");
+        //System.setProperty("swarm.logging", "DEBUG");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-ri:1.0-SNAPSHOT").withTransitivity().asFile();
@@ -72,7 +74,6 @@ public class RolesAllowedTest {
                 .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
                 .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
-                .addAsWebInfResource("jwt-users.properties", "classes/jwt-users.properties")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
                 .addAsWebInfResource("WEB-INF/jboss-web.xml", "jboss-web.xml")
@@ -241,6 +242,22 @@ public class RolesAllowedTest {
     @Test
     public void getEJBSubjectClass() throws Exception {
         String uri = baseURL.toExternalForm() + "/endp/getEJBSubjectClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+    }
+
+    /**
+     * This test requires that the server provide a mapping from the group1 grant in the token to a Group1MappedRole
+     * application declared role.
+     */
+    @Test
+    public void testNeedsGroup1Mapping() {
+        String uri = baseURL.toExternalForm() + "/endp/needsGroup1Mapping";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 ;
