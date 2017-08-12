@@ -2,14 +2,14 @@ package org.eclipse.microprofile.jwt.test.jaxrs;
 
 
 import io.undertow.servlet.ServletExtension;
-import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.impl.DefaultJWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.eclipse.microprofile.jwt.wfswarm.JWTAuthMethodExtension;
+import org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTExtension;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.Filters;
@@ -24,6 +24,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import javax.enterprise.inject.spi.Extension;
 import javax.security.enterprise.CallerPrincipal;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -53,10 +54,10 @@ public class RolesAllowedTest {
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
         //System.setProperty("swarm.debug.port", "8888");
-        //System.setProperty("swarm.logging", "DEBUG");
+        //System.setProperty("swarm.logging", "TRACE");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
-        File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-ri:1.0-SNAPSHOT").withTransitivity().asFile();
+        File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-prototype:1.0-SNAPSHOT").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
@@ -68,11 +69,12 @@ public class RolesAllowedTest {
                 //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
                 .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
                 .addPackage(JWTCallerPrincipal.class.getPackage())
-                .addClass(JWTPrincipal.class)
+                .addClass(JsonWebToken.class)
                 .addClass(CallerPrincipal.class)
 
                 .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
                 .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
+                .addAsServiceProvider(Extension.class, MPJWTExtension.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
@@ -175,11 +177,27 @@ public class RolesAllowedTest {
         Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
         String reply = response.readEntity(String.class);
         String[] ifaces = reply.split(",");
-        boolean hasJWTPrincipal = false;
+        boolean hasJsonWebToken = false;
         for(String iface : ifaces) {
-            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
         }
-        Assert.assertTrue("PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
+    }
+    @Test
+    public void getInjectedPrincipal() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getInjectedPrincipal";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        String[] ifaces = reply.split(",");
+        boolean hasJsonWebToken = false;
+        for(String iface : ifaces) {
+            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
+        }
+        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
     }
     @Test
     public void getSubjectClass() throws Exception {
@@ -203,11 +221,11 @@ public class RolesAllowedTest {
         Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
         String reply = response.readEntity(String.class);
         String[] ifaces = reply.split(",");
-        boolean hasJWTPrincipal = false;
+        boolean hasJsonWebToken = false;
         for(String iface : ifaces) {
-            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
         }
-        Assert.assertTrue("PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
     }
 
     @Test
@@ -232,11 +250,11 @@ public class RolesAllowedTest {
         Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
         String reply = response.readEntity(String.class);
         String[] ifaces = reply.split(",");
-        boolean hasJWTPrincipal = false;
+        boolean hasJsonWebToken = false;
         for(String iface : ifaces) {
-            hasJWTPrincipal |= iface.equals(JWTPrincipal.class.getTypeName());
+            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
         }
-        Assert.assertTrue("EJB PrincipalClass has JWTPrincipal interface", hasJWTPrincipal);
+        Assert.assertTrue("EJB PrincipalClass has JsonWebToken interface", hasJsonWebToken);
     }
 
     @Test

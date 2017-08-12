@@ -26,19 +26,17 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.LoginException;
 
-import org.eclipse.microprofile.jwt.JWTPrincipal;
-import org.eclipse.microprofile.jwt.impl.DefaultJWTCallerPrincipalFactory;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.ParseException;
 import org.jboss.security.SimpleGroup;
 import org.jboss.security.SimplePrincipal;
-import org.jboss.security.auth.callback.JBossCallbackHandler;
 import org.jboss.security.auth.callback.SecurityAssociationCallback;
 import org.jboss.security.auth.spi.RoleMappingLoginModule;
 
 public class JWTLoginModule extends RoleMappingLoginModule {
-    private JWTPrincipal jwtPrincipal;
+    private JsonWebToken jwtPrincipal;
 
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
@@ -72,7 +70,7 @@ public class JWTLoginModule extends RoleMappingLoginModule {
             roles.addMember(new SimplePrincipal(name));
         }
         subject.getPrincipals().add(roles);
-        sharedState.put("JWTPrincipal", jwtPrincipal);
+        sharedState.put("JsonWebToken", jwtPrincipal);
         return super.commit();
     }
 

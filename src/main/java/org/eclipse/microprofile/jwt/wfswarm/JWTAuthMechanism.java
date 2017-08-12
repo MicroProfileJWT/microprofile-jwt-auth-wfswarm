@@ -34,11 +34,12 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
-import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.principal.JWTAuthContextInfo;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.ParseException;
+import org.eclipse.microprofile.jwt.wfswarm.cdi.JWTPrincipalProducer;
 import org.eclipse.microprofile.jwt.wfswarm.jaas.JWTCredential;
 import org.jboss.security.SecurityConstants;
 import org.jboss.security.SecurityContextAssociation;
@@ -87,10 +88,11 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                             UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                         // Install the JWT principal as the caller
                         Account account = identityManager.verify(credential.getName(), credential);
-                        JWTPrincipal jwtPrincipal = (JWTPrincipal) account.getPrincipal();
+                        JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
+                        JWTPrincipalProducer.setJWTPrincipal(jwtPrincipal);
                         JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
                         securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
-                        // Workaround authenticated JWTPrincipal not being installed as user principal
+                        // Workaround authenticated JsonWebToken not being installed as user principal
                         // https://issues.jboss.org/browse/WFLY-9212
                         org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
                         Subject subject = jbSC.getUtil().getSubject();

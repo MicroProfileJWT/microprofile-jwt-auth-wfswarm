@@ -18,13 +18,15 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/endp")
 public class RolesEndpoint {
 
     @EJB
     private IService serviceEJB;
+    @Inject
+    private JsonWebToken jwtPrincipal;
 
     @GET
     @Path("/echo")
@@ -75,6 +77,27 @@ public class RolesEndpoint {
     }
 
     @GET
+    @Path("/getInjectedPrincipal")
+    public String getInjectedPrincipal(@Context SecurityContext sec) {
+        HashSet<Class> interfaces = new HashSet<>();
+        Class current = jwtPrincipal.getClass();
+        while(current.equals(Object.class) == false) {
+            Class[] tmp = current.getInterfaces();
+            for(Class c : tmp) {
+                interfaces.add(c);
+            }
+            current = current.getSuperclass();
+        }
+        StringBuilder tmp = new StringBuilder();
+        for(Class iface : interfaces) {
+            tmp.append(iface.getTypeName());
+            tmp.append(',');
+        }
+        tmp.setLength(tmp.length()-1);
+        return tmp.toString();
+    }
+
+    @GET
     @Path("/getEJBPrincipalClass")
     @RolesAllowed("Tester")
     public String getEJBPrincipalClass(@Context SecurityContext sec) {
@@ -93,10 +116,10 @@ public class RolesEndpoint {
     @RolesAllowed("Tester")
     public String getSubjectClass(@Context SecurityContext sec) throws Exception {
         Subject subject = (Subject) PolicyContext.getContext("javax.security.auth.Subject.container");
-        Set<? extends Principal> principalSet = subject.getPrincipals(JWTPrincipal.class);
+        Set<? extends Principal> principalSet = subject.getPrincipals(JsonWebToken.class);
         if (principalSet.size() > 0)
-            return "subject.getPrincipals(JWTPrincipal.class) ok";
-        throw new IllegalStateException("subject.getPrincipals(JWTPrincipal.class) == 0");
+            return "subject.getPrincipals(JsonWebToken.class) ok";
+        throw new IllegalStateException("subject.getPrincipals(JsonWebToken.class) == 0");
     }
 
     /**

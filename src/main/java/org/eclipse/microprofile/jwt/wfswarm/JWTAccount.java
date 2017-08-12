@@ -23,18 +23,16 @@ import java.security.Principal;
 import java.util.Set;
 
 import io.undertow.security.idm.Account;
-import org.eclipse.microprofile.jwt.JWTPrincipal;
-import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
-import org.wildfly.extension.undertow.security.AccountImpl;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
  * Representation of the caller account using the JWTCallerPrincipal as an Undertow Account object.
  */
 public class JWTAccount implements Account {
-    private JWTPrincipal principal;
+    private JsonWebToken principal;
     private Account delegate;
 
-    public JWTAccount(JWTPrincipal principal, Account delegate) {
+    public JWTAccount(JsonWebToken principal, Account delegate) {
         this.principal = principal;
         this.delegate = delegate;
     }

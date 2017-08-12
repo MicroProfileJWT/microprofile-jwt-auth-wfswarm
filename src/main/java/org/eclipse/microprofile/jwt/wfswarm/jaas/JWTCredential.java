@@ -8,7 +8,8 @@ import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
 
 /**
- *
+ * This is an implementation of the undertow Credential that wraps the bearer token and configured JWTAuthContextInfo
+ * needed for validation of the token.
  */
 public class JWTCredential implements Credential {
     private JWTAuthContextInfo authContextInfo;
@@ -16,13 +17,31 @@ public class JWTCredential implements Credential {
     private String name;
     private Exception jwtException;
 
+    /**
+     *
+     * @param bearerToken
+     * @param authContextInfo
+     */
     public JWTCredential(String bearerToken, JWTAuthContextInfo authContextInfo) {
         this.bearerToken = bearerToken;
         this.authContextInfo = authContextInfo;
     }
 
+    /**
+     * This just parses the token without validation to extract one of the following in order to obtain
+     * the name to be used for the principal:
+     * upn
+     * preferred_username
+     * subject
+     *
+     * If there is an exception it sets the name to INVALID_TOKEN_NAME and saves the exception for access
+     * via {@link #getJwtException()}
+     *
+     * @return the name to use for the principal
+     */
     public String getName() {
         if(name == null) {
+            name = "INVALID_TOKEN_NAME";
             try {
                 // Build a JwtConsumer that doesn't check signatures or do any validation.
                 JwtConsumer firstPassJwtConsumer = new JwtConsumerBuilder()
