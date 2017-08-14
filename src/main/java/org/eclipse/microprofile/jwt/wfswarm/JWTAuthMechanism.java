@@ -24,7 +24,6 @@ import java.security.acl.Group;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -36,15 +35,10 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.principal.JWTAuthContextInfo;
-import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
-import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
-import org.eclipse.microprofile.jwt.principal.ParseException;
-import org.eclipse.microprofile.jwt.wfswarm.cdi.JWTPrincipalProducer;
+import org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer;
 import org.eclipse.microprofile.jwt.wfswarm.jaas.JWTCredential;
 import org.jboss.security.SecurityConstants;
 import org.jboss.security.SecurityContextAssociation;
-import org.jboss.security.SimpleGroup;
-import org.jboss.security.SimplePrincipal;
 import org.jboss.security.identity.RoleGroup;
 import org.jboss.security.identity.plugins.SimpleRoleGroup;
 
@@ -89,7 +83,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         // Install the JWT principal as the caller
                         Account account = identityManager.verify(credential.getName(), credential);
                         JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
-                        JWTPrincipalProducer.setJWTPrincipal(jwtPrincipal);
+                        MPJWTProducer.setJWTPrincipal(jwtPrincipal);
                         JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
                         securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
                         // Workaround authenticated JsonWebToken not being installed as user principal

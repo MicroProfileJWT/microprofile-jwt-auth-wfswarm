@@ -2,6 +2,7 @@ package org.eclipse.microprofile.jwt.test.jaxrs;
 
 
 import io.undertow.servlet.ServletExtension;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.impl.DefaultJWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
@@ -18,6 +19,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.ConfigurableMavenResolverSystem;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jboss.weld.probe.ProbeExtension;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -36,6 +38,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -46,7 +49,12 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @RunWith(Arquillian.class)
 public class RolesAllowedTest {
 
+    // The RolesEndpoint.json JWT
     private static String token;
+    // Time claims in the token
+    private static Long iatClaim;
+    private static Long authTimeClaim;
+    private static Long expClaim;
     @ArquillianResource
     private URL baseURL;
 
@@ -54,15 +62,20 @@ public class RolesAllowedTest {
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
         //System.setProperty("swarm.debug.port", "8888");
+        System.setProperty("org.jboss.weld.development", "true");
+        System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
+
         //System.setProperty("swarm.logging", "TRACE");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-prototype:1.0-SNAPSHOT").withTransitivity().asFile();
+        File[] probe = resolver.resolve("org.jboss.weld.probe:weld-probe-core:2.4.3.Final").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
                 .addAsLibraries(wfswarmauth)
                 .addAsLibraries(ri)
+                .addAsLibraries(probe)
                 .addAsResource(publicKey, "/publicKey.pem")
                 .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
                 .addAsResource("project-defaults.yml", "/project-defaults.yml")
@@ -75,6 +88,7 @@ public class RolesAllowedTest {
                 .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
                 .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
                 .addAsServiceProvider(Extension.class, MPJWTExtension.class)
+                //.addAsServiceProvider(Extension.class, ProbeExtension.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
@@ -86,7 +100,11 @@ public class RolesAllowedTest {
 
     @BeforeClass
     public static void generateToken() throws Exception {
-        token = TokenUtils.generateTokenString("/RolesEndpoint.json");
+        HashMap<String, Long> timeClaims = new HashMap<>();
+        token = TokenUtils.generateTokenString("/RolesEndpoint.json", null, timeClaims);
+        iatClaim = timeClaims.get(Claims.iat.name());
+        authTimeClaim = timeClaims.get(Claims.auth_time.name());
+        expClaim = timeClaims.get(Claims.exp.name());
     }
     @Test
     public void callEchoNoAuth() throws Exception {
@@ -101,8 +119,8 @@ public class RolesAllowedTest {
 
     @Test
     public void callEchoExpiredToken() throws Exception {
-        HashSet<TokenUtils.InvalidFields> invalidFields = new HashSet<>();
-        invalidFields.add(TokenUtils.InvalidFields.EXP);
+        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
+        invalidFields.add(TokenUtils.InvalidClaims.EXP);
         String token = TokenUtils.generateTokenString("/RolesEndpoint.json", invalidFields);
         System.out.printf("jwt: %s\n", token);
 
@@ -198,6 +216,45 @@ public class RolesAllowedTest {
             hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
         }
         Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
+    }
+
+    @Test
+    public void getInjectedClaims() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getInjectedClaims";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                .queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.jti.name(), "a-123")
+                .queryParam(Claims.aud.name(), "s6BhdRkqt3")
+                .queryParam(Claims.sub.name(), "24400320")
+                .queryParam(Claims.raw_token.name(), token)
+                .queryParam(Claims.iat.name(), iatClaim)
+                .queryParam(Claims.auth_time.name(), authTimeClaim)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+        Assert.assertTrue("has iss", reply.contains("iss PASS"));
+        Assert.assertTrue("has jti", reply.contains("jti PASS"));
+        Assert.assertTrue("has aud", reply.contains("aud PASS"));
+        Assert.assertTrue("has iat", reply.contains("iat PASS"));
+        Assert.assertTrue("has sub", reply.contains("sub PASS"));
+        Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
+        Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
+    }
+
+    @Test
+    @Ignore("TODO: look into behavior of this test")
+    public void getInjectedPrincipalNoAuth() throws Exception {
+        String uri = baseURL.toExternalForm() + "/endp/getInjectedPrincipal";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        Assert.assertEquals("PrincipalClass has JsonWebToken interface", "NO_INJECTED_PRINCIPAL", reply);
     }
     @Test
     public void getSubjectClass() throws Exception {
