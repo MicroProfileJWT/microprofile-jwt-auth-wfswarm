@@ -1,27 +1,24 @@
 package org.eclipse.microprofile.jwt.wfswarm.cdi;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.enterprise.inject.spi.InjectionPoint;
 
-import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+/**
+ * A class that tracks the current validated MP-JWT and associated JsonWebToken via a thread
+ * local to provide a @RequestScoped JsonWebToken producer method.
+ *
+ * It also provides utility methods for access the current JsonWebToken claim values.
+ */
 @ApplicationScoped
 public class MPJWTProducer {
     private static ThreadLocal<JsonWebToken> currentPrincipal = new ThreadLocal<>();
@@ -44,13 +41,22 @@ public class MPJWTProducer {
         System.err.printf("observeRequestDestroyed, event=%s\n", event);
     }
 
+    /**
+     * The @RequestScoped producer method for the current JsonWebToken
+     * @return
+     */
     @Produces
     @RequestScoped
     JsonWebToken currentPrincipalOrNull() {
         return currentPrincipal.get();
     }
 
-    @RequestScoped
+    /**
+     * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue<Optional<T>> object.
+     * @param name - name of the claim
+     * @param <T> expected actual type of the claim
+     * @return the claim value wrapper object
+     */
     static <T> ClaimValue<Optional<T>> generalClaimValueProducer(String name) {
         ClaimValueWrapper<Optional<T>> wrapper = new ClaimValueWrapper<>(name);
         T value = getValue(name, false);
@@ -72,24 +78,5 @@ public class MPJWTProducer {
         }
         System.out.printf("getValue(%s), isOptional=%s, claimValue=%s\n", name, isOptional, claimValue);
         return claimValue.orElse(null);
-    }
-
-    private String getName(InjectionPoint injectionPoint) {
-        for (Annotation qualifier : injectionPoint.getQualifiers()) {
-            if (qualifier.annotationType().equals(Claim.class)) {
-                // Check for a non-default value
-                String name = ((Claim) qualifier).value();
-                return name;
-            }
-        }
-        return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> Class<T> unwrapType(Type type) {
-        if (type instanceof ParameterizedType) {
-            type = ((ParameterizedType) type).getActualTypeArguments()[0];
-        }
-        return (Class<T>) type;
     }
 }

@@ -12,6 +12,10 @@ import javax.enterprise.inject.spi.Producer;
 
 import org.eclipse.microprofile.jwt.ClaimValue;
 
+/**
+ *
+ * @param <Object>
+ */
 public class ClaimValueProducer<Object> implements Producer<ClaimValue<Object>> {
     private MPJWTExtension.ClaimIP claimIP;
     private Type type;
@@ -23,6 +27,7 @@ public class ClaimValueProducer<Object> implements Producer<ClaimValue<Object>> 
         for(InjectionPoint ip : claimIP.getInjectionPoints()) {
             types.add(ip.getType());
         }
+        // Verify that there is only one type this producer is dealing with
         if(types.size() > 1) {
             throw new IllegalStateException(String.format("Multiple injection point types: %s for claim: %s", types, claimIP.getClaim().value()));
         }

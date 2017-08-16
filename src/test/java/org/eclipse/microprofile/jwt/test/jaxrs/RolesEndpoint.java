@@ -41,20 +41,32 @@ public class RolesEndpoint {
     @Claim("jti")
     private ClaimValue<String> jti;
     @Inject
+    @Claim("jti")
+    private ClaimValue<Optional<String>> optJTI;
+    @Inject
+    @Claim("jti")
+    private ClaimValue objJTI;
+    @Inject
     @Claim("aud")
     private ClaimValue<Set<String>> aud;
     @Inject
-    @Claim("roles")
-    private ClaimValue<String[]> roles;
+    @Claim("groups")
+    private ClaimValue<Set<String>> groups;
     @Inject
     @Claim("iat")
     private ClaimValue<Long> issuedAt;
+    @Inject
+    @Claim("iat")
+    private ClaimValue<Long> dupIssuedAt;
     @Inject
     @Claim("sub")
     private ClaimValue<Optional<String>> optSubject;
     @Inject
     @Claim("auth_time")
     private ClaimValue<Optional<Long>> authTime;
+    @Inject
+    @Claim("custom-missing")
+    private ClaimValue<Optional<Long>> custom;
 
 
     @GET
@@ -170,6 +182,17 @@ public class RolesEndpoint {
         } else {
             tmp.append(Claims.jti.name()+" FAIL\n");
         }
+        // optJTI
+        Optional<String> optJTIValue = optJTI.getValue();
+        if(optJTIValue == null || !optJTIValue.isPresent()) {
+            tmp.append(Claims.sub.name()+"-Optional value is null or missing\n");
+        }
+        else if(optJTIValue.get().equals(jwtID)) {
+            tmp.append(Claims.jti.name()+"-Optional PASS\n");
+        } else {
+            tmp.append(Claims.jti.name()+"-Optional FAIL\n");
+        }
+
         // aud
         Set<String> audValue = aud.getValue();
         if(audValue == null || audValue.size() == 0) {
@@ -190,15 +213,25 @@ public class RolesEndpoint {
         } else {
             tmp.append(Claims.iat.name()+" FAIL\n");
         }
+        iatValue = dupIssuedAt.getValue();
+        if(iatValue == null || iatValue.intValue() == 0) {
+            tmp.append(Claims.iat.name()+"-Dupe value is null or zero\n");
+        }
+        else if(iatValue.equals(iat)) {
+            tmp.append(Claims.iat.name()+"-Dupe PASS\n");
+        } else {
+            tmp.append(Claims.iat.name()+"-Dupe FAIL\n");
+        }
+
         // sub
         Optional<String> optSubValue = optSubject.getValue();
         if(optSubValue == null || !optSubValue.isPresent()) {
             tmp.append(Claims.sub.name()+" value is null or missing\n");
         }
         else if(optSubValue.get().equals(subject)) {
-            tmp.append(Claims.sub.name()+" PASS\n");
+            tmp.append(Claims.sub.name()+"-Optional PASS\n");
         } else {
-            tmp.append(Claims.sub.name()+" FAIL\n");
+            tmp.append(Claims.sub.name()+"-Optional FAIL\n");
         }
         // auth_time
         Optional<Long> optAuthTimeValue = this.authTime.getValue();
@@ -209,6 +242,17 @@ public class RolesEndpoint {
             tmp.append(Claims.auth_time.name()+" PASS\n");
         } else {
             tmp.append(Claims.auth_time.name()+" FAIL\n");
+        }
+
+        // custom-missing
+        Optional<Long> customValue = custom.getValue();
+        if(customValue == null) {
+            tmp.append("custom-missing value is null\n");
+        }
+        else if(!customValue.isPresent()) {
+            tmp.append("custom-missing PASS\n");
+        } else {
+            tmp.append("custom-missing FAIL\n");
         }
 
         return tmp.toString();

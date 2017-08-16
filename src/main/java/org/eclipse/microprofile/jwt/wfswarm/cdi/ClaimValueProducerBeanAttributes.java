@@ -19,19 +19,23 @@ import org.eclipse.microprofile.jwt.Claim;
 public class ClaimValueProducerBeanAttributes implements BeanAttributes<ClaimValueProducer> {
     private final Set<Type> myTypes;
     private final Set<Annotation> myQualifiers;
-    private final Claim claim;
+    private final MPJWTExtension.ClaimIP claimIP;
 
-    public ClaimValueProducerBeanAttributes(Set<Type> myTypes, Claim claim) {
+    public ClaimValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP) {
         this.myTypes = myTypes;
         this.myQualifiers = new HashSet<>();
-        this.claim = claim;
-        this.myQualifiers.add(claim);
+        this.claimIP = claimIP;
+        this.myQualifiers.add(claimIP.getClaim());
         this.myQualifiers.add(new AnnotationLiteral<Any>(){});
     }
 
+    /**
+     * Set the producer method bean name to the claim name + the injection site type
+     * @return producer method bean name
+     */
     @Override
     public String getName() {
-        return claim.value();
+        return String.format("%s-%s", claimIP.getClaim().value(), claimIP.getMatchType().getTypeName());
     }
 
     @Override
@@ -61,7 +65,7 @@ public class ClaimValueProducerBeanAttributes implements BeanAttributes<ClaimVal
 
     @Override
     public String toString() {
-        return String.format("ClaimValueProducer[%s]", claim.value());
+        return String.format("ClaimValueProducer[%s]", getName());
     }
 
 }

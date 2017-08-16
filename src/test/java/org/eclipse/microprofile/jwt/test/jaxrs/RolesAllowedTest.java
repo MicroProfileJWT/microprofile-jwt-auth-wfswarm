@@ -237,11 +237,14 @@ public class RolesAllowedTest {
         System.out.println(reply);
         Assert.assertTrue("has iss", reply.contains("iss PASS"));
         Assert.assertTrue("has jti", reply.contains("jti PASS"));
+        Assert.assertTrue("has jti-Optional", reply.contains("jti-Optional PASS"));
         Assert.assertTrue("has aud", reply.contains("aud PASS"));
         Assert.assertTrue("has iat", reply.contains("iat PASS"));
-        Assert.assertTrue("has sub", reply.contains("sub PASS"));
+        Assert.assertTrue("has iat-Dupe", reply.contains("iat-Dupe PASS"));
+        Assert.assertTrue("has sub-Optional", reply.contains("sub-Optional PASS"));
         Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
         Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
+        Assert.assertTrue("saw custom-missing", reply.contains("custom-missing PASS"));
     }
 
     @Test
