@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.Producer;
@@ -13,15 +14,16 @@ import javax.enterprise.inject.spi.Producer;
 import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
- *
- * @param
+ * This does not work for the non-proxyable types
+ * @param <T> claim type
  */
-public class ClaimValueProducer<T> implements Producer<ClaimValue<T>> {
+@RequestScoped
+public class RawClaimProducer<T> implements Producer<T> {
     private MPJWTExtension.ClaimIP claimIP;
     private Type type;
     private Type valueType;
 
-    ClaimValueProducer(MPJWTExtension.ClaimIP claimIP) {
+    RawClaimProducer(MPJWTExtension.ClaimIP claimIP) {
         this.claimIP = claimIP;
         HashSet<Type> types = new HashSet<>();
         for(InjectionPoint ip : claimIP.getInjectionPoints()) {
@@ -38,22 +40,16 @@ public class ClaimValueProducer<T> implements Producer<ClaimValue<T>> {
         }
     }
     @Override
-    public ClaimValue<T> produce(CreationalContext<ClaimValue<T>> ctx) {
-        System.out.printf("ClaimValueProducer(%s).produce\n", claimIP);
+    public T produce(CreationalContext<T> ctx) {
+        System.out.printf("RawClaimProducer(%s).produce\n", claimIP);
         ClaimValue<Optional<T>> cv = MPJWTProducer.generalClaimValueProducer(claimIP.getClaimName());
-        ClaimValue<T> returnValue = (ClaimValue<T>) cv;
         Optional<T> value = cv.getValue();
-        if(!valueType.getTypeName().startsWith(Optional.class.getTypeName())) {
-            T nestedValue = value.orElse(null);
-            ClaimValueWrapper<T> wrapper = new ClaimValueWrapper<>(cv.getName());
-            wrapper.setValue(nestedValue);
-            returnValue = wrapper;
-        }
+        T returnValue = value.orElse(null);
         return returnValue;
     }
 
     @Override
-    public void dispose(ClaimValue<T> instance) {
+    public void dispose(Object instance) {
 
     }
 

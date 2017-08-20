@@ -1,16 +1,24 @@
 package org.eclipse.microprofile.jwt.wfswarm.cdi;
 
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.inject.spi.Producer;
+import javax.inject.Provider;
 
+import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
@@ -65,9 +73,9 @@ public class MPJWTProducer {
         return wrapper;
     }
 
-    static  <T> T getValue(String name, boolean isOptional) {
+    public static  <T> T getValue(String name, boolean isOptional) {
         JsonWebToken jwt = getJWTPrincpal();
-        if (name == null || name.isEmpty() || jwt == null) {
+        if (jwt == null) {
             System.out.printf("getValue(%s), null JsonWebToken\n", name);
             return null;
         }

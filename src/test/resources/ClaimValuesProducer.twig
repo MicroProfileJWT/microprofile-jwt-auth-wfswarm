@@ -1,0 +1,71 @@
+package org.eclipse.microprofile.jwt.wfswarm.cdi.claims;
+
+import java.util.Optional;
+
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.Annotated;
+import javax.enterprise.inject.spi.InjectionPoint;
+
+import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.ClaimValue;
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.jwt.wfswarm.cdi.ClaimValueWrapper;
+import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getJWTPrincpal;
+import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getValue;
+
+@RequestScoped
+public class ClaimValuesProducer{{cname}} {
+    JsonWebToken jwt;
+    {{type}} value;
+
+    @PostConstruct
+    void init() {
+        jwt = getJWTPrincpal();
+    }
+
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    {{type}} getRawValue(InjectionPoint ip) {
+        getClaimValue(ip);
+        return value;
+    }
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    Optional<{{type}}> getOptionalValue(InjectionPoint ip) {
+        getClaimValue(ip);
+        return Optional.ofNullable(value);
+    }
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    ClaimValue<{{type}}> getCV(InjectionPoint ip) {
+        String name = getClaimValue(ip);
+        ClaimValueWrapper<{{type}}> cv = new ClaimValueWrapper<>(name);
+        cv.setValue(value);
+        return cv;
+    }
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    ClaimValue getCVUntyped(InjectionPoint ip) {
+        String name = getClaimValue(ip);
+        ClaimValueWrapper<{{type}}> cv = new ClaimValueWrapper<>(name);
+        cv.setValue(value);
+        return cv;
+    }
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    ClaimValue<Optional<{{type}}>> getOptionalCV(InjectionPoint ip) {
+        String name = getClaimValue(ip);
+        ClaimValueWrapper<Optional<{{type}}>> cv = new ClaimValueWrapper<>(name);
+        cv.setValue(Optional.of(value));
+        return cv;
+    }
+
+    private String getClaimValue(InjectionPoint ip) {
+        String name = "{{name}}";
+        value = getValue(name, false);
+        return name;
+    }
+}

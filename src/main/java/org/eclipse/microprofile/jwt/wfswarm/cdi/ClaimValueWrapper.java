@@ -8,12 +8,11 @@ import org.eclipse.microprofile.jwt.ClaimValue;
  * An implementation of the ClaimValue interface
  * @param <T> the claim value type
  */
-@Vetoed
 public class ClaimValueWrapper<T> implements ClaimValue<T> {
     private String name;
     private T value;
 
-    ClaimValueWrapper(String name) {
+    public ClaimValueWrapper(String name) {
         System.err.printf("ClaimValueWrapper[@%s](%s)\n", Integer.toHexString(hashCode()), name);
         this.name = name;
     }
@@ -26,7 +25,7 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
     public T getValue() {
         return value;
     }
-    void setValue(T value) {
+    public void setValue(T value) {
         this.value = value;
     }
 

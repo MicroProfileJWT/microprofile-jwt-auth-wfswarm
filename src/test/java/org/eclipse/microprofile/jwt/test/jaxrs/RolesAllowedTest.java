@@ -62,8 +62,8 @@ public class RolesAllowedTest {
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
         //System.setProperty("swarm.debug.port", "8888");
-        System.setProperty("org.jboss.weld.development", "true");
-        System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
+        //System.setProperty("org.jboss.weld.development", "true");
+        //System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
 
         //System.setProperty("swarm.logging", "TRACE");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
@@ -238,6 +238,7 @@ public class RolesAllowedTest {
         Assert.assertTrue("has iss", reply.contains("iss PASS"));
         Assert.assertTrue("has jti", reply.contains("jti PASS"));
         Assert.assertTrue("has jti-Optional", reply.contains("jti-Optional PASS"));
+        Assert.assertTrue("has jti-Provider", reply.contains("jti-Provider PASS"));
         Assert.assertTrue("has aud", reply.contains("aud PASS"));
         Assert.assertTrue("has iat", reply.contains("iat PASS"));
         Assert.assertTrue("has iat-Dupe", reply.contains("iat-Dupe PASS"));
@@ -245,6 +246,38 @@ public class RolesAllowedTest {
         Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
         Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
         Assert.assertTrue("saw custom-missing", reply.contains("custom-missing PASS"));
+
+        // A second request to validate the request scope of injected values
+        HashMap<String, Long> timeClaims = new HashMap<>();
+        String token2 = TokenUtils.generateTokenString("/RolesEndpoint2.json", null, timeClaims);
+        Long iatClaim2 = timeClaims.get(Claims.iat.name());
+        Long authTimeClaim2 = timeClaims.get(Claims.auth_time.name());
+        WebTarget echoEndpointTarget2 = ClientBuilder.newClient()
+                .target(uri)
+                .queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.jti.name(), "a-123.2")
+                .queryParam(Claims.aud.name(), "s6BhdRkqt3")
+                .queryParam(Claims.sub.name(), "24400320#2")
+                .queryParam(Claims.raw_token.name(), token2)
+                .queryParam(Claims.iat.name(), iatClaim2)
+                .queryParam(Claims.auth_time.name(), authTimeClaim2)
+                ;
+        Response response2 = echoEndpointTarget2.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token2).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response2.getStatus());
+        reply = response2.readEntity(String.class);
+        System.out.println(reply);
+        Assert.assertTrue("has iss", reply.contains("iss PASS"));
+        Assert.assertTrue("has jti", reply.contains("jti PASS"));
+        Assert.assertTrue("has jti-Optional", reply.contains("jti-Optional PASS"));
+        Assert.assertTrue("has jti-Provider", reply.contains("jti-Provider PASS"));
+        Assert.assertTrue("has aud", reply.contains("aud PASS"));
+        Assert.assertTrue("has iat", reply.contains("iat PASS"));
+        Assert.assertTrue("has iat-Dupe", reply.contains("iat-Dupe PASS"));
+        Assert.assertTrue("has sub-Optional", reply.contains("sub-Optional PASS"));
+        Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
+        Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
+        Assert.assertTrue("saw custom-missing", reply.contains("custom-missing PASS"));
+
     }
 
     @Test

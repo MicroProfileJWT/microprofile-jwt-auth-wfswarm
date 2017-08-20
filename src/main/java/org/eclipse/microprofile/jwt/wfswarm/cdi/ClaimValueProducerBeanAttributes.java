@@ -16,7 +16,7 @@ import org.eclipse.microprofile.jwt.Claim;
 /**
  * The BeanAttributes for the ClaimValueProducer
  */
-public class ClaimValueProducerBeanAttributes implements BeanAttributes<ClaimValueProducer> {
+public class ClaimValueProducerBeanAttributes<T> implements BeanAttributes<T> {
     private final Set<Type> myTypes;
     private final Set<Annotation> myQualifiers;
     private final MPJWTExtension.ClaimIP claimIP;
@@ -35,7 +35,7 @@ public class ClaimValueProducerBeanAttributes implements BeanAttributes<ClaimVal
      */
     @Override
     public String getName() {
-        return String.format("%s-%s", claimIP.getClaim().value(), claimIP.getMatchType().getTypeName());
+        return String.format("%s-%s", claimIP.getClaimName(), claimIP.getMatchType().getTypeName());
     }
 
     @Override

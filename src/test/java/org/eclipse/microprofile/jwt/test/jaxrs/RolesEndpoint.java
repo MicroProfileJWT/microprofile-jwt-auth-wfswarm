@@ -3,7 +3,9 @@ package org.eclipse.microprofile.jwt.test.jaxrs;
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.security.auth.Subject;
 import javax.security.jacc.PolicyContext;
 import javax.security.jacc.PolicyContextException;
@@ -25,6 +27,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/endp")
+@ApplicationScoped
 public class RolesEndpoint {
 
     @EJB
@@ -32,14 +35,19 @@ public class RolesEndpoint {
     @Inject
     private JsonWebToken jwtPrincipal;
     @Inject
-    @Claim("raw_token")
+    private Provider<JsonWebToken> altJwtPrincipal;
+    @Inject
+    @Claim(standard = Claims.raw_token)
     private ClaimValue<String> rawToken;
     @Inject
-    @Claim("iss")
+    @Claim(standard = Claims.iss)
     private ClaimValue<String> issuer;
     @Inject
-    @Claim("jti")
+    @Claim(standard = Claims.jti)
     private ClaimValue<String> jti;
+    @Inject
+    @Claim(standard = Claims.jti)
+    private Provider<String> providerJTI;
     @Inject
     @Claim("jti")
     private ClaimValue<Optional<String>> optJTI;
@@ -58,6 +66,9 @@ public class RolesEndpoint {
     @Inject
     @Claim("iat")
     private ClaimValue<Long> dupIssuedAt;
+    @Inject
+    @Claim(standard = Claims.iat)
+    private Provider<Long> providerIAT;
     @Inject
     @Claim("sub")
     private ClaimValue<Optional<String>> optSubject;
@@ -120,6 +131,11 @@ public class RolesEndpoint {
     @GET
     @Path("/getInjectedPrincipal")
     public String getInjectedPrincipal(@Context SecurityContext sec) {
+        JsonWebToken altPrincipal = altJwtPrincipal.get();
+        if(altPrincipal == null) {
+            throw new IllegalStateException("Null JsonWebToken from Provider");
+        }
+
         HashSet<Class> interfaces = new HashSet<>();
         Class current = jwtPrincipal.getClass();
         while(current.equals(Object.class) == false) {
@@ -155,7 +171,7 @@ public class RolesEndpoint {
         // iss
         String issValue = issuer.getValue();
         if(issValue == null || issValue.length() == 0) {
-            tmp.append(Claims.iss.name()+"value is null or empty\n");
+            tmp.append(Claims.iss.name()+" value is null or empty\n");
         }
         else if(issValue.equals(iss)) {
             tmp.append(Claims.iss.name()+" PASS\n");
@@ -192,6 +208,16 @@ public class RolesEndpoint {
         } else {
             tmp.append(Claims.jti.name()+"-Optional FAIL\n");
         }
+        // providerJTI
+        String providerJTIValue = providerJTI.get();
+        if(providerJTIValue == null || providerJTIValue.length() == 0) {
+            tmp.append(Claims.jti.name()+"-Provider value is null or empty\n");
+        }
+        else if(providerJTIValue.equals(jwtID)) {
+            tmp.append(Claims.jti.name()+"-Provider PASS\n");
+        } else {
+            tmp.append(Claims.jti.name()+"-Provider FAIL\n");
+        }
 
         // aud
         Set<String> audValue = aud.getValue();
@@ -222,7 +248,20 @@ public class RolesEndpoint {
         } else {
             tmp.append(Claims.iat.name()+"-Dupe FAIL\n");
         }
-
+        // providerIAT
+        /*
+        Long providerIATValue = providerIAT.get();
+        if(providerIATValue == null) {
+            tmp.append(Claims.sub.name()+"-Provider value is null or missing\n");
+        }
+        else if(providerIATValue.equals(iat)) {
+            tmp.append(Claims.iat.name()+"-Provider PASS\n");
+        } else {
+            tmp.append(Claims.iat.name()+"-Provider FAIL\n");
+        }
+        providerIATValue = providerIAT.get();
+        providerIATValue = providerIAT.get();
+*/
         // sub
         Optional<String> optSubValue = optSubject.getValue();
         if(optSubValue == null || !optSubValue.isPresent()) {

@@ -1,0 +1,12 @@
+    @Produces
+    @Claim(standard= Claims.{{name}})
+    {{type}} getRawValue{{cname}}() {
+        Optional<{{type}}> value = jwt.claim(Claims.{{name}}.name());
+        return value.orElse({{nullValue}});
+    }
+    @Produces
+    @Claim(standard=Claims.{{name}})
+    Optional<{{type}}> getOptionalValue{{cname}}(InjectionPoint ip) {
+        Optional<{{type}}> value = jwt.claim(Claims.{{name}}.name());
+        return value;
+    }
