@@ -14,7 +14,7 @@ import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
  *
- * @param
+ * @param <T> the raw claim type
  */
 public class ClaimValueProducer<T> implements Producer<ClaimValue<T>> {
     private MPJWTExtension.ClaimIP claimIP;

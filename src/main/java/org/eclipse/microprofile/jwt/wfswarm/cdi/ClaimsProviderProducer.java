@@ -14,7 +14,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getJWTPrincpal;
 
 /**
- * A collection of producer methods for injection points with Provider<...> types.
+ * A collection of producer methods for injection points with Provider&lt;...&gt; types.
  * The GenerateClaimsProviderMethods test code generates these methods from the Claims enum values.
  */
 @RequestScoped
