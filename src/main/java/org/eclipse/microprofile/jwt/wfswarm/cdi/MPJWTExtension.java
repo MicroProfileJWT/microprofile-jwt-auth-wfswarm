@@ -209,8 +209,6 @@ public class MPJWTExtension implements Extension {
 
     void doProcessProducers(@Observes ProcessProducer pp) {
         System.out.printf("pp: %s, %s\n", pp.getAnnotatedMember(), pp.getProducer());
-
-
     }
     void processClaimProducerInjections(@Observes ProcessInjectionPoint<?, Provider> pip) {
         System.out.printf("pip: %s\n", pip.getInjectionPoint());
@@ -232,9 +230,13 @@ public class MPJWTExtension implements Extension {
                 claims.put(key, claimIP);
             }
             claimIP.getInjectionPoints().add(ip);
-            System.out.printf("+++ Added Producer Claim(%s) ip: %s\n", claimName, ip);
+            System.out.printf("+++ Added Provider Claim(%s) ip: %s\n", claimName, ip);
 
-            /*
+
+            /* The ClaimsProviderProducer methods only use the @Claim(standard=...) form of the
+            qualifier, so if an injection site has used the string form, we override it's qualifier
+            set here to use the standard form.
+             */
             Set<Annotation> qualifiers = ip.getQualifiers();
             final HashSet<Annotation> override = new HashSet<>(qualifiers);
             if(!usesEnum) {
@@ -281,7 +283,6 @@ public class MPJWTExtension implements Extension {
                     }
                 });
             }
-            */
         }
     }
     /**

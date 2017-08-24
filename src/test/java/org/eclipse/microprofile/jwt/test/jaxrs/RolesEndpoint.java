@@ -16,6 +16,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
@@ -60,6 +61,9 @@ public class RolesEndpoint {
     @Inject
     @Claim("groups")
     private ClaimValue<Set<String>> groups;
+    @Inject
+    @Claim("groups")
+    private Provider<Set<String>> providerGroups;
     @Inject
     @Claim("iat")
     private ClaimValue<Long> issuedAt;
@@ -166,6 +170,7 @@ public class RolesEndpoint {
                                     @QueryParam("aud") String audience,
                                     @QueryParam("iat") Long iat,
                                     @QueryParam("sub") String subject,
+                                    @QueryParam("groups") String groupNames,
                                     @QueryParam("auth_time") Long authTime) {
         StringBuilder tmp = new StringBuilder("getInjectedClaims\n");
         // iss
@@ -249,7 +254,6 @@ public class RolesEndpoint {
             tmp.append(Claims.iat.name()+"-Dupe FAIL\n");
         }
         // providerIAT
-        /*
         Long providerIATValue = providerIAT.get();
         if(providerIATValue == null) {
             tmp.append(Claims.sub.name()+"-Provider value is null or missing\n");
@@ -261,7 +265,6 @@ public class RolesEndpoint {
         }
         providerIATValue = providerIAT.get();
         providerIATValue = providerIAT.get();
-*/
         // sub
         Optional<String> optSubValue = optSubject.getValue();
         if(optSubValue == null || !optSubValue.isPresent()) {
@@ -292,6 +295,20 @@ public class RolesEndpoint {
             tmp.append("custom-missing PASS\n");
         } else {
             tmp.append("custom-missing FAIL\n");
+        }
+
+        // providerGroups
+        Set<String> providerGroupsSet = providerGroups.get();
+        HashSet<String> expectedGroups = new HashSet<>();
+        String[] names = groupNames.split(",");
+        expectedGroups.addAll(Arrays.asList(names));
+        if(providerGroupsSet == null || providerGroupsSet.size() == 0) {
+            tmp.append(Claims.groups.name()+"-Provider value is null or empty\n");
+        }
+        else if(providerGroupsSet.containsAll(expectedGroups)) {
+            tmp.append(Claims.groups.name()+"-Provider PASS\n");
+        } else {
+            tmp.append(Claims.groups.name()+"-Provider FAIL\n");
         }
 
         return tmp.toString();

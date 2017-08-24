@@ -227,6 +227,7 @@ public class RolesAllowedTest {
                 .queryParam(Claims.jti.name(), "a-123")
                 .queryParam(Claims.aud.name(), "s6BhdRkqt3")
                 .queryParam(Claims.sub.name(), "24400320")
+                .queryParam(Claims.groups.name(), "Echoer,Tester,group1,group2")
                 .queryParam(Claims.raw_token.name(), token)
                 .queryParam(Claims.iat.name(), iatClaim)
                 .queryParam(Claims.auth_time.name(), authTimeClaim)
@@ -246,6 +247,7 @@ public class RolesAllowedTest {
         Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
         Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
         Assert.assertTrue("saw custom-missing", reply.contains("custom-missing PASS"));
+        Assert.assertTrue("has groups-Provider", reply.contains("groups-Provider PASS"));
 
         // A second request to validate the request scope of injected values
         HashMap<String, Long> timeClaims = new HashMap<>();
@@ -258,6 +260,7 @@ public class RolesAllowedTest {
                 .queryParam(Claims.jti.name(), "a-123.2")
                 .queryParam(Claims.aud.name(), "s6BhdRkqt3")
                 .queryParam(Claims.sub.name(), "24400320#2")
+                .queryParam(Claims.groups.name(), "Echoer,Tester,group1.2,group2.2")
                 .queryParam(Claims.raw_token.name(), token2)
                 .queryParam(Claims.iat.name(), iatClaim2)
                 .queryParam(Claims.auth_time.name(), authTimeClaim2)
@@ -277,6 +280,7 @@ public class RolesAllowedTest {
         Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
         Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
         Assert.assertTrue("saw custom-missing", reply.contains("custom-missing PASS"));
+        Assert.assertTrue("has groups-Provider", reply.contains("groups-Provider PASS"));
 
     }
 

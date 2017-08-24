@@ -11,7 +11,7 @@
   "roles": [
     "Echoer", "Tester"
   ],
-  "groups": ["Echoer", "Tester", "group1", "group2"],
+  "groups": ["Echoer", "Tester", "group1.2", "group2.2"],
   "resource_access": {
     "/endp/echo3": {
       "groups": [

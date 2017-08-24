@@ -16,6 +16,7 @@ import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getJWTPrinc
 /**
  * A collection of producer methods for injection points with Provider&lt;...&gt; types.
  * The GenerateClaimsProviderMethods test code generates these methods from the Claims enum values.
+ * Note: this means that one cannot injection non-standard claims using a Provider wrapper.
  */
 @RequestScoped
 public class ClaimsProviderProducer {
