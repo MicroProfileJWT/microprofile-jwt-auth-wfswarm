@@ -25,6 +25,7 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <version.testng>6.10</version.testng>
         <arquillian.version>1.1.13.Final</arquillian.version>
         <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
     </properties>
@@ -94,6 +95,11 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${version.testng}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.junit</groupId>

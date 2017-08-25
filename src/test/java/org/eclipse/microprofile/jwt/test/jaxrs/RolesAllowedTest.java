@@ -117,23 +117,6 @@ public class RolesAllowedTest {
         Assert.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatus());
     }
 
-    @Test
-    public void callEchoExpiredToken() throws Exception {
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
-        invalidFields.add(TokenUtils.InvalidClaims.EXP);
-        String token = TokenUtils.generateTokenString("/RolesEndpoint.json", invalidFields);
-        System.out.printf("jwt: %s\n", token);
-
-        String uri = baseURL.toExternalForm() + "/endp/echo";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                .queryParam("input", "hello")
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatus());
-        String reply = response.readEntity(String.class);
-    }
-
     /**
      * Used to test how a standard auth-method works with the authorization layer.
      * @throws Exception

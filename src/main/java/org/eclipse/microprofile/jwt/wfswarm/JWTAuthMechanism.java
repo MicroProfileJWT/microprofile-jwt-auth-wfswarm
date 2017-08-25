@@ -82,20 +82,25 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                             UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                         // Install the JWT principal as the caller
                         Account account = identityManager.verify(credential.getName(), credential);
-                        JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
-                        MPJWTProducer.setJWTPrincipal(jwtPrincipal);
-                        JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
-                        securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
-                        // Workaround authenticated JsonWebToken not being installed as user principal
-                        // https://issues.jboss.org/browse/WFLY-9212
-                        org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
-                        Subject subject = jbSC.getUtil().getSubject();
-                        jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
-                        RoleGroup roles = extract(subject);
-                        jbSC.getUtil().setRoles(roles);
-                        UndertowLogger.SECURITY_LOGGER.infof("Authenticated caller(%s) for path(%s) with roles: %s",
-                                credential.getName(), exchange.getRequestPath(), account.getRoles());
-                        return AuthenticationMechanismOutcome.AUTHENTICATED;
+                        if(account != null) {
+                            JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
+                            MPJWTProducer.setJWTPrincipal(jwtPrincipal);
+                            JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
+                            securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
+                            // Workaround authenticated JsonWebToken not being installed as user principal
+                            // https://issues.jboss.org/browse/WFLY-9212
+                            org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
+                            Subject subject = jbSC.getUtil().getSubject();
+                            jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
+                            RoleGroup roles = extract(subject);
+                            jbSC.getUtil().setRoles(roles);
+                            UndertowLogger.SECURITY_LOGGER.infof("Authenticated caller(%s) for path(%s) with roles: %s",
+                                    credential.getName(), exchange.getRequestPath(), account.getRoles());
+                            return AuthenticationMechanismOutcome.AUTHENTICATED;
+                        } else {
+                            UndertowLogger.SECURITY_LOGGER.info("Failed to authenticate JWT bearer token");
+                            return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
+                        }
                     } catch (Exception e) {
                         UndertowLogger.SECURITY_LOGGER.debugf(e, "Failed to validate JWT bearer token");
                         return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
