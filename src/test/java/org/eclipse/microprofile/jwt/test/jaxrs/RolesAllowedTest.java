@@ -60,7 +60,7 @@ public class RolesAllowedTest {
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
-        System.setProperty("swarm.resolver.offline", "true");
+        //System.setProperty("swarm.resolver.offline", "true");
         //System.setProperty("swarm.debug.port", "8888");
         //System.setProperty("org.jboss.weld.development", "true");
         //System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
