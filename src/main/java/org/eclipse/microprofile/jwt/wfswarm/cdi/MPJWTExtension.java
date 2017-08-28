@@ -155,56 +155,6 @@ public class MPJWTExtension implements Extension {
         System.out.printf("MPJWTExtension, added JWTPrincipalProducer\n");
         bbd.addAnnotatedType(beanManager.createAnnotatedType(MPJWTProducer.class));
         bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimsProviderProducer.class));
-
-        /*
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerISS.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSUB.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerAUD.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerEXP.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerIAT.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerJTI.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerUPN.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerGROUPS.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerRawToken.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerNBF.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerAuthTime.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerUpdatedAt.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerAZP.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerNONCE.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerAtHash.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerCHash.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerFullName.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerFamilyName.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerMiddleName.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerNICKNAME.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerGivenName.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerPreferredUsername.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerEMAIL.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerEmailVerified.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerGENDER.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerBIRTHDATE.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerZONEINFO.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerLOCALE.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerPhoneNumber.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerPhoneNumberVerified.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerADDRESS.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerACR.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerAMR.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSubJwk.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerCNF.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSipFromTag.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSipDate.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSipCallid.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSipCseqNum.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerSipViaBranch.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerORIG.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerDEST.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerMKY.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerJWK.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerJWE.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerKID.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValuesProducerJKU.class));
-*/
     }
 
     void doProcessProducers(@Observes ProcessProducer pp) {
@@ -240,48 +190,54 @@ public class MPJWTExtension implements Extension {
             Set<Annotation> qualifiers = ip.getQualifiers();
             final HashSet<Annotation> override = new HashSet<>(qualifiers);
             if(!usesEnum) {
-                override.remove(claim);
-                override.add(new ClaimLiteral(){
-                    public Claims standard() {
-                        return Claims.valueOf(claimName);
-                    }
-                });
-                pip.setInjectionPoint(new InjectionPoint() {
-                    @Override
-                    public Type getType() {
-                        return ip.getType();
-                    }
+                try {
+                    final Claims claimType = Claims.valueOf(claimName);
+                    override.remove(claim);
+                    override.add(new ClaimLiteral(){
+                        public Claims standard() {
+                            return claimType;
+                        }
+                    });
+                    pip.setInjectionPoint(new InjectionPoint() {
+                        @Override
+                        public Type getType() {
+                            return ip.getType();
+                        }
 
-                    @Override
-                    public Set<Annotation> getQualifiers() {
-                        return override;
-                    }
+                        @Override
+                        public Set<Annotation> getQualifiers() {
+                            return override;
+                        }
 
-                    @Override
-                    public Bean<?> getBean() {
-                        return ip.getBean();
-                    }
+                        @Override
+                        public Bean<?> getBean() {
+                            return ip.getBean();
+                        }
 
-                    @Override
-                    public Member getMember() {
-                        return ip.getMember();
-                    }
+                        @Override
+                        public Member getMember() {
+                            return ip.getMember();
+                        }
 
-                    @Override
-                    public Annotated getAnnotated() {
-                        return ip.getAnnotated();
-                    }
+                        @Override
+                        public Annotated getAnnotated() {
+                            return ip.getAnnotated();
+                        }
 
-                    @Override
-                    public boolean isDelegate() {
-                        return ip.isDelegate();
-                    }
+                        @Override
+                        public boolean isDelegate() {
+                            return ip.isDelegate();
+                        }
 
-                    @Override
-                    public boolean isTransient() {
-                        return ip.isTransient();
-                    }
-                });
+                        @Override
+                        public boolean isTransient() {
+                            return ip.isTransient();
+                        }
+                    });
+                } catch(IllegalArgumentException e) {
+                    // A non-standard claim,
+                    claimIP.setNonStandard(true);
+                }
             }
         }
     }

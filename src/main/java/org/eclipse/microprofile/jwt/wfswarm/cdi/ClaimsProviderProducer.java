@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
@@ -20,6 +21,7 @@ import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getJWTPrinc
  */
 @RequestScoped
 public class ClaimsProviderProducer {
+    @Inject
     JsonWebToken jwt;
 
     @PostConstruct
@@ -61,12 +63,22 @@ public class ClaimsProviderProducer {
     @Produces
     @Claim(standard= Claims.aud)
     java.util.Set<String> getRawValueAUD() {
+        if(jwt == null)
+            jwt = getJWTPrincpal();
+        if(jwt == null) {
+            throw new IllegalStateException("No request scoped JsonWebToken found");
+        }
         Optional<java.util.Set<String>> value = jwt.claim(Claims.aud.name());
         return value.orElse(java.util.Collections.emptySet());
     }
     @Produces
     @Claim(standard=Claims.aud)
     Optional<java.util.Set<String>> getOptionalValueAUD(InjectionPoint ip) {
+        if(jwt == null)
+            jwt = getJWTPrincpal();
+        if(jwt == null) {
+            throw new IllegalStateException("No request scoped JsonWebToken found");
+        }
         Optional<java.util.Set<String>> value = jwt.claim(Claims.aud.name());
         return value;
     }
