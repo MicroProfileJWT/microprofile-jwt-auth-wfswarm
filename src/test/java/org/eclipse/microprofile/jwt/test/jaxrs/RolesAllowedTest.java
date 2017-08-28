@@ -68,20 +68,23 @@ public class RolesAllowedTest {
         //System.setProperty("swarm.logging", "TRACE");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
+        File[] resteasy = resolver.resolve("org.jboss.resteasy:resteasy-json-p-provider:3.0.6.Final").withTransitivity().asFile();
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-prototype:1.0-SNAPSHOT").withTransitivity().asFile();
-        File[] probe = resolver.resolve("org.jboss.weld.probe:weld-probe-core:2.4.3.Final").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
                 .addAsLibraries(wfswarmauth)
                 .addAsLibraries(ri)
-                .addAsLibraries(probe)
+                .addAsLibraries(resteasy)
                 .addAsResource(publicKey, "/publicKey.pem")
                 .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
                 .addAsResource("project-defaults.yml", "/project-defaults.yml")
                 //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
-                .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
                 .addPackage(JWTCallerPrincipal.class.getPackage())
+                .addClass(RolesEndpoint.class)
+                .addClass(IService.class)
+                .addClass(ServiceEJB.class)
+                .addClass(ServiceServlet.class)
                 .addClass(JsonWebToken.class)
                 .addClass(CallerPrincipal.class)
 

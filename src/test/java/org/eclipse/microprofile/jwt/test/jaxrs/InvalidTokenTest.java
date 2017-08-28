@@ -51,38 +51,40 @@ public class InvalidTokenTest extends Arquillian {
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
         System.setProperty("swarm.resolver.offline", "true");
-        System.setProperty("swarm.debug.port", "8888");
+        //System.setProperty("swarm.debug.port", "8888");
         //System.setProperty("org.jboss.weld.development", "true");
         //System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
 
         //System.setProperty("swarm.logging", "TRACE");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
         File wfswarmauth = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-wfswarm:1.0-SNAPSHOT").withoutTransitivity().asSingleFile();
+        File[] resteasy = resolver.resolve("org.jboss.resteasy:resteasy-json-p-provider:3.0.6.Final").withTransitivity().asFile();
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-prototype:1.0-SNAPSHOT").withTransitivity().asFile();
-        File[] probe = resolver.resolve("org.jboss.weld.probe:weld-probe-core:2.4.3.Final").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
             .create(WebArchive.class, "InvalidTokenTest.war")
             .addAsLibraries(wfswarmauth)
             .addAsLibraries(ri)
-            .addAsLibraries(probe)
+            .addAsLibraries(resteasy)
             .addAsResource(publicKey, "/publicKey.pem")
             .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
             .addAsResource("project-defaults.yml", "/project-defaults.yml")
-                .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
-                .addPackage(JWTCallerPrincipal.class.getPackage())
-                .addClass(JsonWebToken.class)
-                .addClass(CallerPrincipal.class)
-                .addClass(RolesEndpoint.class)
-                .addClass(TCKApplication.class)
-                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
-                .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
-                .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
-                .addAsServiceProvider(Extension.class, MPJWTExtension.class)
-                .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
-                .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
-                .addAsWebInfResource("WEB-INF/jboss-web.xml", "jboss-web.xml")
-                ;
+            .addPackage(JWTCallerPrincipal.class.getPackage())
+            .addClass(JsonWebToken.class)
+            .addClass(CallerPrincipal.class)
+            .addClass(RolesEndpoint.class)
+            .addClass(IService.class)
+            .addClass(ServiceEJB.class)
+            .addClass(ServiceServlet.class)
+            .addClass(TCKApplication.class)
+            .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
+            .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
+            .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
+            .addAsServiceProvider(Extension.class, MPJWTExtension.class)
+            .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
+            .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
+            .addAsWebInfResource("WEB-INF/jboss-web.xml", "jboss-web.xml")
+            ;
         System.out.printf("WebArchive: %s\n", webArchive.toString(true));
         return webArchive;
     }
