@@ -8,9 +8,8 @@ import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
  * The ProducerFactory for ClaimValueProducer
- * @param &lt;T&gt; the raw claim type
  */
-public class ClaimValueProducerFactory<T> implements ProducerFactory<ClaimValueProducer> {
+public class ClaimValueProducerFactory implements ProducerFactory<ClaimValueProducer> {
     private MPJWTExtension.ClaimIP claimIP;
     ClaimValueProducerFactory(MPJWTExtension.ClaimIP claimIP) {
         this.claimIP = claimIP;

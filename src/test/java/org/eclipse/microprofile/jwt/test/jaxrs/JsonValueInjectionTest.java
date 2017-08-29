@@ -94,7 +94,6 @@ public class JsonValueInjectionTest extends Arquillian {
                 .addAsServiceProvider(JWTCallerPrincipalFactory.class, DefaultJWTCallerPrincipalFactory.class)
                 .addAsServiceProvider(ServletExtension.class, JWTAuthMethodExtension.class)
                 .addAsServiceProvider(Extension.class, MPJWTExtension.class)
-                //.addAsServiceProvider(Extension.class, ProbeExtension.class)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml")

@@ -14,14 +14,14 @@ import javax.enterprise.util.AnnotationLiteral;
 import org.eclipse.microprofile.jwt.Claim;
 
 /**
- * The BeanAttributes for the ClaimValueProducer
+ * The BeanAttributes for the ClaimValueProducer and JsonValueProducer
  */
-public class ClaimValueProducerBeanAttributes<T> implements BeanAttributes<T> {
+public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
     private final Set<Type> myTypes;
     private final Set<Annotation> myQualifiers;
     private final MPJWTExtension.ClaimIP claimIP;
 
-    public ClaimValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP) {
+    public ValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP) {
         this.myTypes = myTypes;
         this.myQualifiers = new HashSet<>();
         this.claimIP = claimIP;

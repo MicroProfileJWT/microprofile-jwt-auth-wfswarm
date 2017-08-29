@@ -140,7 +140,7 @@ public class JsonValuejectionEndpoint {
         if(audValue == null || audValue.size() == 0) {
             msg = Claims.aud.name()+"value is null or empty, FAIL";
         }
-        else if(audValue.contains(audience)) {
+        else if(audValue.get(0).getString().equals(audience)) {
             msg = Claims.aud.name()+" PASS";
             pass = true;
         }
@@ -237,7 +237,7 @@ public class JsonValuejectionEndpoint {
         Long customValue = customInteger.longValue();
         System.out.printf("+++ verifyInjectedCustomInteger, JsonNumber.class.CL: %s\n",
                 JsonNumber.class.getClassLoader());
-        if(customValue == value) {
+        if(customValue.equals(value)) {
             msg = "customInteger PASS";
             pass = true;
         }
@@ -259,10 +259,7 @@ public class JsonValuejectionEndpoint {
         String msg;
         // iat
         Double customValue = customDouble.doubleValue();
-        if(customValue == null) {
-            msg = "customDouble value is null, FAIL";
-        }
-        else if(Math.abs(customValue.doubleValue() - value.doubleValue()) < 0.00001) {
+        if(Math.abs(customValue.doubleValue() - value.doubleValue()) < 0.00001) {
             msg = "customDouble PASS";
             pass = true;
         }
