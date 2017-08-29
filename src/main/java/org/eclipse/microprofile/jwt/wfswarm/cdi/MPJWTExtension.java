@@ -171,7 +171,7 @@ public class MPJWTExtension implements Extension {
      * @param beanManager cdi bean manager
      */
     public void observeBeforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager beanManager) {
-        System.out.printf("MPJWTExtension, added JWTPrincipalProducer\n");
+        System.out.printf("MPJWTExtension(1.0.1), added JWTPrincipalProducer\n");
         bbd.addAnnotatedType(beanManager.createAnnotatedType(MPJWTProducer.class));
         bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimsProviderProducer.class));
     }
