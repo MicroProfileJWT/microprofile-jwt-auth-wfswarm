@@ -78,7 +78,7 @@ public class JsonValueInjectionTest extends Arquillian {
         File[] ri = resolver.resolve("org.eclipse.microprofile.jwt:jwt-auth-principal-prototype:1.0-SNAPSHOT").withTransitivity().asFile();
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
-                .create(WebArchive.class, "ProviderInjectionTest.war")
+                .create(WebArchive.class, "JsonValueInjectionTest.war")
                 .addAsLibraries(wfswarmauth)
                 .addAsLibraries(ri)
                 .addAsLibraries(resteasy)

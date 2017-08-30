@@ -23,6 +23,7 @@ import javax.enterprise.inject.spi.DeploymentException;
 import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InjectionTargetFactory;
+import javax.enterprise.inject.spi.ProcessBeanAttributes;
 import javax.enterprise.inject.spi.ProcessInjectionPoint;
 import javax.enterprise.inject.spi.ProcessProducer;
 import javax.enterprise.inject.spi.ProducerFactory;
@@ -164,6 +165,9 @@ public class MPJWTExtension implements Extension {
     /** A map of claim,type pairs to the injection site information */
     private HashMap<ClaimIPType, ClaimIP> claims = new HashMap<>();
     private AnnotatedType<ClaimValuesProducer> templateType;
+    private Set<Type> providerOptionalTypes = new HashSet<>();
+    private Set<Type> providerTypes = new HashSet<>();
+    private Set<Annotation> providerQualifiers = new HashSet<>();
 
     /**
      * Register the MPJWTProducer JsonWebToken producer bean
@@ -171,9 +175,9 @@ public class MPJWTExtension implements Extension {
      * @param beanManager cdi bean manager
      */
     public void observeBeforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager beanManager) {
-        System.out.printf("MPJWTExtension(1.0.1), added JWTPrincipalProducer\n");
+        System.out.printf("MPJWTExtension(1.0.2), added JWTPrincipalProducer\n");
         bbd.addAnnotatedType(beanManager.createAnnotatedType(MPJWTProducer.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimsProviderProducer.class));
+        bbd.addAnnotatedType(beanManager.createAnnotatedType(CustomClaimProducer.class));
     }
 
     void doProcessProducers(@Observes ProcessProducer pp) {
@@ -227,6 +231,13 @@ public class MPJWTExtension implements Extension {
             ClaimIP claimIP = claims.get(claimName);
             Type matchType = ip.getType();
             Type actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
+            // Don't add Optional as this is handled specially
+            if(!actualType.getTypeName().startsWith(Optional.class.getTypeName())) {
+                providerTypes.add(actualType);
+            } else {
+                providerOptionalTypes.add(actualType);
+            }
+            providerQualifiers.add(claim);
             ClaimIPType key = new ClaimIPType(claimName, actualType);
             if(claimIP == null) {
                 claimIP = new ClaimIP(actualType, actualType, false, claim);
@@ -241,6 +252,7 @@ public class MPJWTExtension implements Extension {
             qualifier, so if an injection site has used the string form, we override it's qualifier
             set here to use the standard form.
              */
+            /*
             Set<Annotation> qualifiers = ip.getQualifiers();
             final HashSet<Annotation> override = new HashSet<>(qualifiers);
             if(!usesEnum) {
@@ -293,6 +305,7 @@ public class MPJWTExtension implements Extension {
                     claimIP.setNonStandard(true);
                 }
             }
+            */
         }
     }
     /**
@@ -333,6 +346,33 @@ public class MPJWTExtension implements Extension {
         }
     }
 
+    /**
+     * Replace our xxx BeanAttributes with
+     * yyyto properly reflect all of the type locations the producer method applies to.
+     * @see xxx
+     * @param pba
+     */
+    public void addTypeToClaimProducer(@Observes ProcessBeanAttributes pba) {
+        //System.out.printf("addTypeToClaimProducer, checking: %s\n", pba.getAnnotated());
+        if (pba.getAnnotated().isAnnotationPresent(Claim.class)) {
+            Claim claim = pba.getAnnotated().getAnnotation(Claim.class);
+            if(claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
+                System.out.printf("addTypeToClaimProducer: %s\n", pba.getAnnotated());
+                BeanAttributes delegate = pba.getBeanAttributes();
+                if(delegate.getTypes().contains(Optional.class)) {
+                    if(providerOptionalTypes.size() == 0) {
+                        providerOptionalTypes.add(Optional.class);
+                    }
+                    pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, providerOptionalTypes, providerQualifiers));
+                } else {
+                    if(providerTypes.size() == 0) {
+                        providerTypes.add(Object.class);
+                    }
+                    pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, providerTypes, providerQualifiers));
+                }
+            }
+        }
+    }
     public void afterDeploymentValidation(@Observes AfterDeploymentValidation event, BeanManager beanManager) {
         System.err.println("afterDeploymentValidation");
     }
@@ -410,7 +450,7 @@ public class MPJWTExtension implements Extension {
                 event.addBean(bean);
                 System.out.printf("Added %s\n", bean);
             }
-            else if(!claimIP.isProviderSite() || claimIP.isNonStandard()) {
+            else if(!claimIP.isProviderSite()) {
                 // Pass in the ClaimIP so the producer knows the actual type
                 ProducerFactory<ClaimValueProducer> factory = new ClaimValueProducerFactory(claimIP);
                 // Create the BeanAttributes for the injection site producer method

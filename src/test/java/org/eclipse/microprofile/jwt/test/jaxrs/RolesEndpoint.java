@@ -52,9 +52,11 @@ public class RolesEndpoint {
     @Inject
     @Claim("jti")
     private ClaimValue<Optional<String>> optJTI;
+    /*
     @Inject
     @Claim("jti")
     private ClaimValue objJTI;
+    */
     @Inject
     @Claim("aud")
     private ClaimValue<Set<String>> aud;

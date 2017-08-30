@@ -281,6 +281,19 @@ public class ProviderInjectionTest extends Arquillian {
         System.out.println(reply);
         Reporter.log(reply.toString());
         Assert.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
+
+        String token2 = TokenUtils.generateTokenString("/RolesEndpoint2.json");
+        echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                .queryParam("value", 1234567892)
+                .queryParam(Claims.auth_time.name(), authTimeClaim);
+        Response response2 = echoEndpointTarget.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, "Bearer " + token2).get();
+        Assert.assertEquals(response2.getStatus(), HttpURLConnection.HTTP_OK);
+        JsonObject reply2 = response2.readEntity(JsonObject.class);
+        System.out.println(reply2);
+        Reporter.log(reply.toString());
+        Assert.assertTrue(reply2.getBoolean("pass"), reply2.getString("msg"));
+
     }
     @RunAsClient
     @Test(groups = TEST_GROUP_CDI_JSON,
