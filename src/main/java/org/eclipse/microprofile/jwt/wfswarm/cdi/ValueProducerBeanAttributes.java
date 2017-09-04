@@ -20,13 +20,18 @@ public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
     private final Set<Type> myTypes;
     private final Set<Annotation> myQualifiers;
     private final MPJWTExtension.ClaimIP claimIP;
+    private Class<? extends Annotation> scope = RequestScoped.class;
 
     public ValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP) {
+        this(myTypes, claimIP, RequestScoped.class);
+    }
+    public ValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP, Class<? extends Annotation> scope) {
         this.myTypes = myTypes;
         this.myQualifiers = new HashSet<>();
         this.claimIP = claimIP;
         this.myQualifiers.add(claimIP.getClaim());
         this.myQualifiers.add(new AnnotationLiteral<Any>(){});
+        this.scope = scope;
     }
 
     /**
@@ -35,7 +40,8 @@ public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
      */
     @Override
     public String getName() {
-        return String.format("%s-%s", claimIP.getClaimName(), claimIP.getMatchType().getTypeName());
+        String ext = claimIP.isJsonValue() ? "json" : "CV";
+        return null; //String.format("%s-%s[%s]", claimIP.getClaimName(), claimIP.getMatchType().getTypeName(), ext);
     }
 
     @Override
@@ -45,7 +51,7 @@ public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
 
     @Override
     public Class<? extends Annotation> getScope() {
-        return RequestScoped.class;
+        return scope;
     }
 
     @Override

@@ -20,6 +20,9 @@ public class ClaimProviderBeanAttributes implements BeanAttributes<Object> {
         this.delegate = delegate;
         this.types = types;
         this.qualifiers = qualifiers;
+        if(types.size() == 0) {
+            Thread.dumpStack();
+        }
     }
 
     @Override

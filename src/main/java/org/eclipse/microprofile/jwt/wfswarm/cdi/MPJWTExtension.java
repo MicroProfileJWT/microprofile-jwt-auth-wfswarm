@@ -2,6 +2,7 @@ package org.eclipse.microprofile.jwt.wfswarm.cdi;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -9,6 +10,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.SessionScoped;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.AfterDeploymentValidation;
@@ -33,6 +36,7 @@ import javax.json.JsonValue;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
+import org.jboss.weld.bean.ProducerMethod;
 
 /**
  * A CDI extension that provides a producer for the current authenticated JsonWebToken based on a thread
@@ -42,7 +46,7 @@ import org.eclipse.microprofile.jwt.Claims;
  * This also installs the producer methods for the discovered:
  * <ul>
  *  <li>@Claim ClaimValue<T> injection sites.</li>
- *  <li>@Claim Provider<T> injection sites.</li>
+ *  <li>@Claim raw type<T> injection sites.</li>
  *  <li>@Claim JsonValue injection sites.</li>
  * </ul>
  *
@@ -167,6 +171,8 @@ public class MPJWTExtension implements Extension {
     private AnnotatedType<ClaimValuesProducer> templateType;
     private Set<Type> providerOptionalTypes = new HashSet<>();
     private Set<Type> providerTypes = new HashSet<>();
+    private Set<Type> rawTypes = new HashSet<>();
+    private Set<Annotation> rawTypeQualifiers = new HashSet<>();
     private Set<Annotation> providerQualifiers = new HashSet<>();
 
     /**
@@ -178,10 +184,33 @@ public class MPJWTExtension implements Extension {
         System.out.printf("MPJWTExtension(1.0.2), added JWTPrincipalProducer\n");
         bbd.addAnnotatedType(beanManager.createAnnotatedType(MPJWTProducer.class));
         bbd.addAnnotatedType(beanManager.createAnnotatedType(CustomClaimProducer.class));
+        bbd.addAnnotatedType(beanManager.createAnnotatedType(RawClaimTypeProducer.class));
     }
 
     void doProcessProducers(@Observes ProcessProducer pp) {
         System.out.printf("pp: %s, %s\n", pp.getAnnotatedMember(), pp.getProducer());
+    }
+
+    void processClaimValueInjections(@Observes ProcessInjectionPoint pip) {
+        System.out.printf("pipRaw: %s\n", pip.getInjectionPoint());
+        InjectionPoint ip = pip.getInjectionPoint();
+        if (ip.getAnnotated().isAnnotationPresent(Claim.class) && ip.getType() instanceof Class) {
+            Class rawClass = (Class) ip.getType();
+            if(Modifier.isFinal(rawClass.getModifiers())) {
+                Claim claim = ip.getAnnotated().getAnnotation(Claim.class);
+                rawTypes.add(ip.getType());
+                rawTypeQualifiers.add(claim);
+                System.out.printf("+++ Added Claim raw type: %s\n", ip.getType());
+                Class declaringClass = ip.getMember().getDeclaringClass();
+                Annotation[] appScoped = declaringClass.getAnnotationsByType(ApplicationScoped.class);
+                Annotation[] sessionScoped = declaringClass.getAnnotationsByType(SessionScoped.class);
+                if((appScoped != null && appScoped.length > 0) || (sessionScoped != null && sessionScoped.length > 0)) {
+                    String err = String.format("A raw type cannot be injected into application/session scope: IP=%s", ip);
+                    pip.addDefinitionError(new DeploymentException(err));
+                }
+
+            }
+        }
     }
 
     /**
@@ -233,11 +262,12 @@ public class MPJWTExtension implements Extension {
             Type actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
             // Don't add Optional as this is handled specially
             if(!actualType.getTypeName().startsWith(Optional.class.getTypeName())) {
-                providerTypes.add(actualType);
+                rawTypes.add(actualType);
             } else {
                 providerOptionalTypes.add(actualType);
+                providerQualifiers.add(claim);
             }
-            providerQualifiers.add(claim);
+            rawTypeQualifiers.add(claim);
             ClaimIPType key = new ClaimIPType(claimName, actualType);
             if(claimIP == null) {
                 claimIP = new ClaimIP(actualType, actualType, false, claim);
@@ -359,16 +389,28 @@ public class MPJWTExtension implements Extension {
             if(claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
                 System.out.printf("addTypeToClaimProducer: %s\n", pba.getAnnotated());
                 BeanAttributes delegate = pba.getBeanAttributes();
+                ProducerMethod method = null;
+                if(delegate instanceof ProducerMethod) {
+                    method = (ProducerMethod) delegate;
+                }
                 if(delegate.getTypes().contains(Optional.class)) {
                     if(providerOptionalTypes.size() == 0) {
                         providerOptionalTypes.add(Optional.class);
                     }
                     pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, providerOptionalTypes, providerQualifiers));
+                } else if(method != null && method.getBeanClass() == RawClaimTypeProducer.class){
+                    if(rawTypes.size() == 0) {
+                        rawTypes.add(Object.class);
+                    }
+                    pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, rawTypes, rawTypeQualifiers));
+                    System.out.printf("Setup RawClaimTypeProducer BeanAttributes\n");
                 } else {
+                    /*
                     if(providerTypes.size() == 0) {
                         providerTypes.add(Object.class);
                     }
                     pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, providerTypes, providerQualifiers));
+                    */
                 }
             }
         }
@@ -385,6 +427,7 @@ public class MPJWTExtension implements Extension {
     void observesAfterBeanDiscovery(@Observes final AfterBeanDiscovery event, final BeanManager beanManager) {
         System.out.printf("handleClaimInjections, %s\n", claims);
         installClaimValueProducerMethodsViaSyntheticBeans(event, beanManager);
+
         //installClaimValueProducesViaTemplateType(event, beanManager);
     }
 

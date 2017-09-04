@@ -3,12 +3,15 @@ package org.eclipse.microprofile.jwt.test.jaxrs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 
 import javax.enterprise.inject.spi.Extension;
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.security.enterprise.CallerPrincipal;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -69,7 +72,7 @@ public class JsonValueInjectionTest extends Arquillian {
     @Deployment(testable=true)
     public static WebArchive createDeployment() throws IOException {
         //System.setProperty("swarm.resolver.offline", "true");
-        //System.setProperty("swarm.debug.port", "8888");
+        System.setProperty("swarm.debug.port", "8888");
         //System.setProperty("org.jboss.weld.development", "true");
         //System.setProperty("org.jboss.weld.probe.exportDataAfterDeployment", "/tmp/cdi.out");
         ConfigurableMavenResolverSystem resolver = Maven.configureResolver().workOffline();
@@ -124,9 +127,10 @@ public class JsonValueInjectionTest extends Arquillian {
                 .queryParam(Claims.auth_time.name(), authTimeClaim);
         Response response = echoEndpointTarget.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, "Bearer " + token).get();
         Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
-        JsonObject reply = response.readEntity(JsonObject.class);
-        System.out.println(reply);
-        Reporter.log(reply.toString());
+        String replyString = response.readEntity(String.class);
+        JsonReader jsonReader = Json.createReader(new StringReader(replyString));
+        JsonObject reply = jsonReader.readObject();
+        Reporter.log(", reply: <br>"+reply.toString());
         Assert.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
     @RunAsClient
