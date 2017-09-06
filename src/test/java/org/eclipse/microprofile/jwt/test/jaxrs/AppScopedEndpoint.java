@@ -10,6 +10,7 @@ import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
  * Test that an attempt to inject a raw token value type into an @ApplicationScoped bean generates a
@@ -19,6 +20,8 @@ import org.eclipse.microprofile.jwt.Claims;
 @RolesAllowed("Tester")
 @Path("/endp")
 public class AppScopedEndpoint {
+    @Inject
+    JsonWebToken jwt;
     @Inject
     @Claim(standard = Claims.iss)
     private String issuer;

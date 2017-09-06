@@ -1,57 +1,58 @@
 package org.eclipse.microprofile.jwt.wfswarm.cdi;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.lang.annotation.Annotation;
 
-import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.Producer;
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 
-import org.eclipse.microprofile.jwt.ClaimValue;
+import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.Claims;
 
 /**
  * A producer for JsonValue injection types
  */
-public class JsonValueProducer implements Producer<JsonValue> {
-    private MPJWTExtension.ClaimIP claimIP;
-    private Type type;
-    private Type valueType;
+public class JsonValueProducer {
 
-    JsonValueProducer(MPJWTExtension.ClaimIP claimIP) {
-        this.claimIP = claimIP;
-        HashSet<Type> types = new HashSet<>();
-        for(InjectionPoint ip : claimIP.getInjectionPoints()) {
-            types.add(ip.getType());
-        }
-        // Verify that there is only one type this producer is dealing with
-        if(types.size() > 1) {
-            throw new IllegalStateException(String.format("Multiple injection point types: %s for claim: %s", types, claimIP.getClaim().value()));
-        }
-        this.type = types.iterator().next();
-        this.valueType = type;
-        if (type instanceof ParameterizedType) {
-            valueType = ((ParameterizedType) type).getActualTypeArguments()[0];
-        }
+    @Produces
+    @Claim("")
+    public JsonString getJsonString(InjectionPoint ip) {
+        return getValue(ip);
     }
-    @Override
-    public JsonValue produce(CreationalContext<JsonValue> ctx) {
-        System.out.printf("JsonValueProducer(%s).produce\n", claimIP);
-        JsonValue jsonValue = MPJWTProducer.generalJsonValueProducer(claimIP.getClaimName());
+    @Produces
+    @Claim("")
+    public JsonNumber getJsonNumber(InjectionPoint ip) {
+        return getValue(ip);
+    }
+    @Produces
+    @Claim("")
+    public JsonArray getJsonArray(InjectionPoint ip) {
+        return getValue(ip);
+    }
+    @Produces
+    @Claim("")
+    public JsonObject getJsonObject(InjectionPoint ip) {
+        return getValue(ip);
+    }
+    public <T extends JsonValue> T getValue(InjectionPoint ip) {
+        System.out.printf("JsonValueProducer(%s).produce\n", ip);
+        String name = getName(ip);
+        T jsonValue = (T) MPJWTProducer.generalJsonValueProducer(name);
         return jsonValue;
     }
 
-    @Override
-    public void dispose(JsonValue instance) {
-
+    String getName(InjectionPoint ip) {
+        String name = null;
+        for(Annotation ann : ip.getQualifiers()) {
+            if(ann instanceof Claim) {
+                Claim claim = (Claim) ann;
+                name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
+            }
+        }
+        return name;
     }
-
-    @Override
-    public Set<InjectionPoint> getInjectionPoints() {
-        return claimIP.getInjectionPoints();
-    }
-
 }

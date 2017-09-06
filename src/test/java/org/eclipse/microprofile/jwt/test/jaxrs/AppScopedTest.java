@@ -2,29 +2,21 @@ package org.eclipse.microprofile.jwt.test.jaxrs;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashSet;
 
-import javax.enterprise.inject.spi.DeploymentException;
 import javax.enterprise.inject.spi.Extension;
 import javax.security.enterprise.CallerPrincipal;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 
 import io.undertow.servlet.ServletExtension;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.impl.DefaultJWTCallerPrincipalFactory;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.principal.JWTCallerPrincipalFactory;
-import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.eclipse.microprofile.jwt.wfswarm.JWTAuthMethodExtension;
 import org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTExtension;
 import org.eclipse.microprofile.jwt.wfswarm.cdi.TCKApplication;
+import org.jboss.arquillian.container.spi.client.container.DeploymentException;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.container.test.api.ShouldThrowException;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.arquillian.testng.Arquillian;
@@ -34,8 +26,6 @@ import org.jboss.shrinkwrap.resolver.api.maven.ConfigurableMavenResolverSystem;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 public class AppScopedTest extends Arquillian {
     /**
@@ -88,17 +78,7 @@ public class AppScopedTest extends Arquillian {
     }
 
     @Test
-    @RunAsClient
-    public void verifyDeploymentException() throws Exception {
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
-        invalidFields.add(TokenUtils.InvalidClaims.EXP);
-        String token = TokenUtils.generateTokenString("/RolesEndpoint.json", invalidFields);
-
-        String uri = baseURL.toExternalForm() + "/endp/verify";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_INTERNAL_ERROR);
+    public void verifyDeploymentException() {
+        Assert.fail("Should not execute as a deployment exception should have aborted all tests");
     }
 }

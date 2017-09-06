@@ -183,8 +183,10 @@ public class MPJWTExtension implements Extension {
     public void observeBeforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd, BeanManager beanManager) {
         System.out.printf("MPJWTExtension(1.0.2), added JWTPrincipalProducer\n");
         bbd.addAnnotatedType(beanManager.createAnnotatedType(MPJWTProducer.class));
-        bbd.addAnnotatedType(beanManager.createAnnotatedType(CustomClaimProducer.class));
+        //bbd.addAnnotatedType(beanManager.createAnnotatedType(CustomClaimProducer.class));
         bbd.addAnnotatedType(beanManager.createAnnotatedType(RawClaimTypeProducer.class));
+        bbd.addAnnotatedType(beanManager.createAnnotatedType(ClaimValueProducer.class));
+        bbd.addAnnotatedType(beanManager.createAnnotatedType(JsonValueProducer.class));
     }
 
     void doProcessProducers(@Observes ProcessProducer pp) {
@@ -214,34 +216,6 @@ public class MPJWTExtension implements Extension {
     }
 
     /**
-     * Collect the types of all JsonValue injection points annotated with {@linkplain Claim}.
-     * @param pip - the injection point event information
-     */
-    void processClaimJsonValueInjections(@Observes ProcessInjectionPoint<?, ? extends JsonValue> pip) {
-        System.out.printf("pip: %s\n", pip.getInjectionPoint());
-        final InjectionPoint ip = pip.getInjectionPoint();
-        if (ip.getAnnotated().isAnnotationPresent(Claim.class)) {
-            Claim claim = ip.getAnnotated().getAnnotation(Claim.class);
-            if(claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
-                throw new DeploymentException("@Claim at: "+ip+" has no name or valid standard enum setting");
-            }
-            boolean usesEnum = claim.standard() != Claims.UNKNOWN;
-            final String claimName = usesEnum ? claim.standard().name() : claim.value();
-            System.out.printf("Checking JsonValue Claim(%s), ip: %s\n", claimName, ip);
-            ClaimIP claimIP = claims.get(claimName);
-            Type matchType = ip.getType();
-            ClaimIPType key = new ClaimIPType(claimName, matchType);
-            if(claimIP == null) {
-                claimIP = new ClaimIP(matchType, matchType, false, claim);
-                claimIP.setJsonValue(true);
-                claims.put(key, claimIP);
-            }
-            claimIP.getInjectionPoints().add(ip);
-            System.out.printf("+++ Added JsonValue Claim(%s) ip: %s\n", claimName, ip);
-        }
-    }
-
-    /**
      *
      * Collect the types of all Provider injection points annotated with {@linkplain Claim}.
      * @param pip - the injection point event information
@@ -256,14 +230,14 @@ public class MPJWTExtension implements Extension {
             }
             boolean usesEnum = claim.standard() != Claims.UNKNOWN;
             final String claimName = usesEnum ? claim.standard().name() : claim.value();
-            System.out.printf("Checking Producer Claim(%s), ip: %s\n", claimName, ip);
+            System.out.printf("Checking Provider Claim(%s), ip: %s\n", claimName, ip);
             ClaimIP claimIP = claims.get(claimName);
             Type matchType = ip.getType();
             Type actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
             // Don't add Optional as this is handled specially
-            if(!actualType.getTypeName().startsWith(Optional.class.getTypeName())) {
+            if(!optionalOrJsonValue(actualType)) {
                 rawTypes.add(actualType);
-            } else {
+            } else if(!actualType.getTypeName().startsWith("javax.json.Json")){
                 providerOptionalTypes.add(actualType);
                 providerQualifiers.add(claim);
             }
@@ -277,104 +251,9 @@ public class MPJWTExtension implements Extension {
             claimIP.getInjectionPoints().add(ip);
             System.out.printf("+++ Added Provider Claim(%s) ip: %s\n", claimName, ip);
 
-
-            /* The ClaimsProviderProducer methods only use the @Claim(standard=...) form of the
-            qualifier, so if an injection site has used the string form, we override it's qualifier
-            set here to use the standard form.
-             */
-            /*
-            Set<Annotation> qualifiers = ip.getQualifiers();
-            final HashSet<Annotation> override = new HashSet<>(qualifiers);
-            if(!usesEnum) {
-                try {
-                    final Claims claimType = Claims.valueOf(claimName);
-                    override.remove(claim);
-                    override.add(new ClaimLiteral(){
-                        public Claims standard() {
-                            return claimType;
-                        }
-                    });
-                    pip.setInjectionPoint(new InjectionPoint() {
-                        @Override
-                        public Type getType() {
-                            return ip.getType();
-                        }
-
-                        @Override
-                        public Set<Annotation> getQualifiers() {
-                            return override;
-                        }
-
-                        @Override
-                        public Bean<?> getBean() {
-                            return ip.getBean();
-                        }
-
-                        @Override
-                        public Member getMember() {
-                            return ip.getMember();
-                        }
-
-                        @Override
-                        public Annotated getAnnotated() {
-                            return ip.getAnnotated();
-                        }
-
-                        @Override
-                        public boolean isDelegate() {
-                            return ip.isDelegate();
-                        }
-
-                        @Override
-                        public boolean isTransient() {
-                            return ip.isTransient();
-                        }
-                    });
-                } catch(IllegalArgumentException e) {
-                    // A non-standard claim,
-                    claimIP.setNonStandard(true);
-                }
-            }
-            */
         }
     }
-    /**
-     * Collect the types of all ClaimValue injection points annotated with {@linkplain Claim}.
-     * @param pip - the injection point event information
-     */
-    void processInjection(@Observes ProcessInjectionPoint<?, ClaimValue> pip) {
-        System.out.printf("processInjection: %s\n", pip.getInjectionPoint());
-        InjectionPoint ip = pip.getInjectionPoint();
-        if (ip.getAnnotated().isAnnotationPresent(Claim.class)) {
-            Claim claim = ip.getAnnotated().getAnnotation(Claim.class);
-            if(claim.value().length() == 0 && claim.standard() == Claims.UNKNOWN) {
-                throw new DeploymentException("@Claim at: "+ip+" has no name or valie standard enum setting");
-            }
-            boolean usesEnum = claim.standard() != Claims.UNKNOWN;
-            final String claimName = usesEnum ? claim.standard().name() : claim.value();
-            System.out.printf("Checking Claim(%s), ip: %s\n", claimName, ip);
-            ClaimIP claimIP = claims.get(claimName);
-            ClaimIPType key = new ClaimIPType(claimName, ip.getType());
-            if(claimIP == null) {
-                // Pull out the ClaimValue<T> T type,
-                Type matchType = ip.getType();
-                Type actualType = Object.class;
-                boolean isOptional = false;
-                if(matchType instanceof ParameterizedType) {
-                    actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
-                    isOptional = matchType.getTypeName().equals(Optional.class.getTypeName());
-                    if (isOptional) {
-                        actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
-                    }
-                }
 
-                claimIP = new ClaimIP(matchType, actualType, isOptional, claim);
-                claims.put(key, claimIP);
-            }
-            claimIP.getInjectionPoints().add(ip);
-            System.out.printf("+++ Added Claim(%s) ip: %s\n", claimName, ip);
-        }
-    }
 
     /**
      * Replace our xxx BeanAttributes with
@@ -398,7 +277,8 @@ public class MPJWTExtension implements Extension {
                         providerOptionalTypes.add(Optional.class);
                     }
                     pba.setBeanAttributes(new ClaimProviderBeanAttributes(delegate, providerOptionalTypes, providerQualifiers));
-                } else if(method != null && method.getBeanClass() == RawClaimTypeProducer.class){
+                }
+                else if(method != null && method.getBeanClass() == RawClaimTypeProducer.class){
                     if(rawTypes.size() == 0) {
                         rawTypes.add(Object.class);
                     }
@@ -432,77 +312,17 @@ public class MPJWTExtension implements Extension {
     }
 
     /**
-     * Currently unused prototype code.
-     * @param event - AfterBeanDiscovery
-     * @param beanManager - CDI bean manager
-     */
-    private void installClaimValueProducesViaTemplateType(final AfterBeanDiscovery event, final BeanManager beanManager) {
-        BeanAttributes<ClaimValuesProducer> ba = beanManager.createBeanAttributes(templateType);
-        InjectionTargetFactory<ClaimValuesProducer> templateITF = beanManager.getInjectionTargetFactory(templateType);
-        Bean<ClaimValuesProducer> templateBean = beanManager.createBean(ba, ClaimValuesProducer.class, templateITF);
-        for(AnnotatedMethod<? super ClaimValuesProducer> am : templateType.getMethods()) {
-            ProducerFactory<ClaimValuesProducer> factory = beanManager.getProducerFactory(am, templateBean);
-            System.out.printf("\tBaseType:%s\n", am.getBaseType());
-            System.out.printf("\tAnnotations:%s\n", am.getAnnotations());
-            System.out.printf("\tIP:%s\n", factory.createProducer(templateBean).getInjectionPoints());
-        }
-
-        // For each @Claim injection point type, add a producer method
-        for (final ClaimIP claimIP : claims.values()) {
-
-            DelegateAnnType typeForClaim = new DelegateAnnType(claimIP.claim, templateType);
-            BeanAttributes<ClaimValuesProducer> attributes = beanManager.createBeanAttributes(typeForClaim);
-            InjectionTargetFactory<ClaimValuesProducer> itf = beanManager.getInjectionTargetFactory(typeForClaim);
-            Bean<ClaimValuesProducer> bean = beanManager.createBean(attributes, ClaimValuesProducer.class, itf);
-            event.addBean(bean);
-            System.out.printf("Added %s\n", bean);
-            Set<AnnotatedMethod<? super ClaimValuesProducer>> methods = typeForClaim.getMethods();
-            for(AnnotatedMethod<? super ClaimValuesProducer> am : methods) {
-                ProducerFactory<ClaimValuesProducer> factory = beanManager.getProducerFactory(am, bean);
-                System.out.printf("\tBaseType:%s\n", am.getBaseType());
-                System.out.printf("\tAnnotations:%s\n", am.getAnnotations());
-                System.out.printf("\tIP:%s\n", factory.createProducer(bean).getInjectionPoints());
-            }
-        }
-    }
-
-    /**
      * Create a synthetic bean with a custom Producer for the non-Provider injection sites.
      * @param event - AfterBeanDiscovery
      * @param beanManager - CDI bean manager
      */
     private void installClaimValueProducerMethodsViaSyntheticBeans(final AfterBeanDiscovery event, final BeanManager beanManager) {
-        // For each non-standard @Claim injection point type, add a producer method
-        for (final ClaimIP claimIP : claims.values()) {
-            /*
-            if(!claimIP.isNonStandard()) {
-                continue;
-            }
-            */
 
-            // Use the ClaimIP#matchType as the type against the producer method will be matched
-            HashSet<Type> methodTypes = new HashSet<>();
-            methodTypes.add(claimIP.matchType);
-            if(claimIP.isJsonValue()) {
-                // Pass in the ClaimIP so the producer knows the actual type
-                ProducerFactory<JsonValueProducer> factory = new JsonValueProducerFactory(claimIP);
-                // Create the BeanAttributes for the injection site producer method
-                ValueProducerBeanAttributes<JsonValueProducer> methodAttributes = new ValueProducerBeanAttributes<>(methodTypes, claimIP);
-                // Create the producer method bean with the custom producer factory
-                Bean<?> bean = beanManager.createBean(methodAttributes, JsonValueProducer.class, factory);
-                event.addBean(bean);
-                System.out.printf("Added %s\n", bean);
-            }
-            else if(!claimIP.isProviderSite()) {
-                // Pass in the ClaimIP so the producer knows the actual type
-                ProducerFactory<ClaimValueProducer> factory = new ClaimValueProducerFactory(claimIP);
-                // Create the BeanAttributes for the injection site producer method
-                ValueProducerBeanAttributes<ClaimValueProducer> methodAttributes = new ValueProducerBeanAttributes<>(methodTypes, claimIP);
-                // Create the producer method bean with the custom producer factory
-                Bean<?> bean = beanManager.createBean(methodAttributes, ClaimValueProducer.class, factory);
-                event.addBean(bean);
-                System.out.printf("Added %s\n", bean);
-            }
-        }
+    }
+
+    private boolean optionalOrJsonValue(Type type) {
+        boolean isOptionOrJson = type.getTypeName().startsWith(Optional.class.getTypeName())
+                | type.getTypeName().startsWith("javax.json.Json");
+        return isOptionOrJson;
     }
 }

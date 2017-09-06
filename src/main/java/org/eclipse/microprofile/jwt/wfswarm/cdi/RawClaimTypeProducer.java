@@ -14,12 +14,21 @@ public class RawClaimTypeProducer {
     @Produces
     @Claim("")
     public Object getValue(InjectionPoint ip) {
-        System.out.printf("RawClaimTypeProducer(%s).produce\n", ip);
+        System.out.printf("RawClaimTypeProducer(%s).getValue\n", ip);
         String name = getName(ip);
         ClaimValue<Optional<Object>> cv = MPJWTProducer.generalClaimValueProducer(name);
         Optional<Object> value = cv.getValue();
         Object returnValue = value.orElse(null);
         return returnValue;
+    }
+    @Produces
+    @Claim("")
+    public Optional getOptionalValue(InjectionPoint ip) {
+        System.out.printf("RawClaimTypeProducer(%s).getOptionalValue\n", ip);
+        String name = getName(ip);
+        ClaimValue<Optional<Object>> cv = MPJWTProducer.generalClaimValueProducer(name);
+        Optional<Object> value = cv.getValue();
+        return value;
     }
 
     String getName(InjectionPoint ip) {
