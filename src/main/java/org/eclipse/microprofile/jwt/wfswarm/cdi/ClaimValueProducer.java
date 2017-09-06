@@ -3,24 +3,19 @@ package org.eclipse.microprofile.jwt.wfswarm.cdi;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.Producer;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
 
 /**
- *
  * @param <T> the raw claim type
  */
-public class ClaimValueProducer<T>  {
+public class ClaimValueProducer<T> {
 
     @Produces
     @Claim("")
@@ -34,7 +29,7 @@ public class ClaimValueProducer<T>  {
         Type matchType = ip.getType();
         Type actualType = Object.class;
         boolean isOptional = false;
-        if(matchType instanceof ParameterizedType) {
+        if (matchType instanceof ParameterizedType) {
             actualType = ((ParameterizedType) matchType).getActualTypeArguments()[0];
             isOptional = matchType.getTypeName().equals(Optional.class.getTypeName());
             if (isOptional) {
@@ -42,7 +37,7 @@ public class ClaimValueProducer<T>  {
             }
         }
 
-        if(!actualType.getTypeName().startsWith(Optional.class.getTypeName())) {
+        if (!actualType.getTypeName().startsWith(Optional.class.getTypeName())) {
             T nestedValue = value.orElse(null);
             ClaimValueWrapper<T> wrapper = new ClaimValueWrapper<>(cv.getName());
             wrapper.setValue(nestedValue);
@@ -53,8 +48,8 @@ public class ClaimValueProducer<T>  {
 
     String getName(InjectionPoint ip) {
         String name = null;
-        for(Annotation ann : ip.getQualifiers()) {
-            if(ann instanceof Claim) {
+        for (Annotation ann : ip.getQualifiers()) {
+            if (ann instanceof Claim) {
                 Claim claim = (Claim) ann;
                 name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
             }

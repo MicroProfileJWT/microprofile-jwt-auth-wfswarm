@@ -21,6 +21,7 @@ public class RawClaimTypeProducer {
         Object returnValue = value.orElse(null);
         return returnValue;
     }
+
     @Produces
     @Claim("")
     public Optional getOptionalValue(InjectionPoint ip) {
@@ -33,8 +34,8 @@ public class RawClaimTypeProducer {
 
     String getName(InjectionPoint ip) {
         String name = null;
-        for(Annotation ann : ip.getQualifiers()) {
-            if(ann instanceof Claim) {
+        for (Annotation ann : ip.getQualifiers()) {
+            if (ann instanceof Claim) {
                 Claim claim = (Claim) ann;
                 name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
             }

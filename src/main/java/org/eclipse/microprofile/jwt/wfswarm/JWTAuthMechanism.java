@@ -50,9 +50,6 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
  */
 public class JWTAuthMechanism implements AuthenticationMechanism {
-    private JWTAuthContextInfo authContextInfo;
-    private IdentityManager identityManager;
-
     public JWTAuthMechanism(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
     }
@@ -61,7 +58,8 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
      * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this
      * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as
      * the authorization layers.
-     * @param exchange - the http request exchange object
+     *
+     * @param exchange        - the http request exchange object
      * @param securityContext - the current security context that
      * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication outcome.
      */
@@ -73,16 +71,16 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
             for (String current : authHeaders) {
                 if (current.toLowerCase(Locale.ENGLISH).startsWith("bearer ")) {
                     bearerToken = current.substring(7);
-                    if(UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
+                    if (UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
                         UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                     try {
                         identityManager = securityContext.getIdentityManager();
                         JWTCredential credential = new JWTCredential(bearerToken, authContextInfo);
-                        if(UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
+                        if (UndertowLogger.SECURITY_LOGGER.isTraceEnabled())
                             UndertowLogger.SECURITY_LOGGER.tracef("Bearer token: %s", bearerToken);
                         // Install the JWT principal as the caller
                         Account account = identityManager.verify(credential.getName(), credential);
-                        if(account != null) {
+                        if (account != null) {
                             JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
                             MPJWTProducer.setJWTPrincipal(jwtPrincipal);
                             JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
@@ -95,7 +93,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                             RoleGroup roles = extract(subject);
                             jbSC.getUtil().setRoles(roles);
                             UndertowLogger.SECURITY_LOGGER.infof("Authenticated caller(%s) for path(%s) with roles: %s",
-                                    credential.getName(), exchange.getRequestPath(), account.getRoles());
+                                                                 credential.getName(), exchange.getRequestPath(), account.getRoles());
                             return AuthenticationMechanismOutcome.AUTHENTICATED;
                         } else {
                             UndertowLogger.SECURITY_LOGGER.info("Failed to authenticate JWT bearer token");
@@ -122,6 +120,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
 
     /**
      * Extract the Roles group and return it as a RoleGroup
+     *
      * @param subject authenticated subject
      * @return RoleGroup from "Roles"
      */
@@ -131,7 +130,11 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                 .filter(g -> g.getName().equals(SecurityConstants.ROLES_IDENTIFIER))
                 .findFirst();
         Group rolesGroup = (Group) match.get();
-        RoleGroup roles = new SimpleRoleGroup( rolesGroup );
+        RoleGroup roles = new SimpleRoleGroup(rolesGroup);
         return roles;
     }
+
+    private JWTAuthContextInfo authContextInfo;
+
+    private IdentityManager identityManager;
 }

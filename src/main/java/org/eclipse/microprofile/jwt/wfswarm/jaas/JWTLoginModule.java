@@ -36,8 +36,6 @@ import org.jboss.security.auth.callback.SecurityAssociationCallback;
 import org.jboss.security.auth.spi.RoleMappingLoginModule;
 
 public class JWTLoginModule extends RoleMappingLoginModule {
-    private JsonWebToken jwtPrincipal;
-
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
         super.initialize(subject, callbackHandler, sharedState, options);
@@ -66,7 +64,7 @@ public class JWTLoginModule extends RoleMappingLoginModule {
     public boolean commit() throws LoginException {
         subject.getPrincipals().add(jwtPrincipal);
         SimpleGroup roles = new SimpleGroup("Roles");
-        for(String name : jwtPrincipal.getGroups()) {
+        for (String name : jwtPrincipal.getGroups()) {
             roles.addMember(new SimplePrincipal(name));
         }
         subject.getPrincipals().add(roles);
@@ -76,6 +74,7 @@ public class JWTLoginModule extends RoleMappingLoginModule {
 
     /**
      * Validate the bearer token passed in with the authorization header
+     *
      * @param jwtCredential - the input bearer token
      * @return return the validated JWTCallerPrincipal
      * @throws ParseException - thrown on token parse or validation failure
@@ -85,4 +84,6 @@ public class JWTLoginModule extends RoleMappingLoginModule {
         JWTCallerPrincipal callerPrincipal = factory.parse(jwtCredential.getBearerToken(), jwtCredential.getAuthContextInfo());
         return callerPrincipal;
     }
+
+    private JsonWebToken jwtPrincipal;
 }

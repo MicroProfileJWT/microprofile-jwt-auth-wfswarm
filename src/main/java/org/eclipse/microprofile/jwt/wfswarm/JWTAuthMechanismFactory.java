@@ -37,8 +37,6 @@ import org.jboss.logging.Logger;
  * A AuthenticationMechanismFactory for the MicroProfile JWT RBAC
  */
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
-    private static Logger log = Logger.getLogger(JWTAuthMechanismFactory.class);
-
     /**
      * This builds the JWTAuthMechanism with a JWTAuthContextInfo containing the issuer and signer public key needed
      * to validate the token. This information is currently taken from the query parameters passed in via the
@@ -46,12 +44,11 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
      *
      * TODO: externalize the {@link JWTAuthContextInfo#getExpGracePeriodSecs()}
      *
-     * @param mechanismName - the login-config/auth-method, which will be MP-JWT for JWTAuthMechanism
+     * @param mechanismName     - the login-config/auth-method, which will be MP-JWT for JWTAuthMechanism
      * @param formParserFactory - unused form type of authentication factory
-     * @param properties - the query parameters from the web.xml/login-config/auth-method value. We expect an issuedBy
-     *                   and signerPubKey property to use for token validation.
+     * @param properties        - the query parameters from the web.xml/login-config/auth-method value. We expect an issuedBy
+     *                          and signerPubKey property to use for token validation.
      * @return the JWTAuthMechanism
-     *
      * @see JWTAuthContextInfo
      */
     @Override
@@ -59,21 +56,21 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
         String issuedBy = properties.get("issuedBy");
-        if(issuedBy == null) {
+        if (issuedBy == null) {
             // Try the /META-INF/MP-JWT-ISSUER content
             URL issURL = loader.getResource("/META-INF/MP-JWT-ISSUER");
-            if(issURL == null)
+            if (issURL == null)
                 throw new IllegalStateException("No issuedBy parameter was found");
             issuedBy = readURLContent(issURL);
-            if(issuedBy == null)
+            if (issuedBy == null)
                 throw new IllegalStateException("No issuedBy parameter was found");
             issuedBy = issuedBy.trim();
         }
         String publicKeyPemEnc = properties.get("signerPubKey");
-        if(publicKeyPemEnc == null) {
+        if (publicKeyPemEnc == null) {
             // Try the /META-INF/MP-JWT-SIGNER content
             URL pkURL = loader.getResource("/META-INF/MP-JWT-SIGNER");
-            if(pkURL == null)
+            if (pkURL == null)
                 throw new IllegalStateException("No signerPubKey parameter was found");
             publicKeyPemEnc = readURLContent(pkURL);
         }
@@ -98,7 +95,7 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
             InputStream is = url.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             String line = reader.readLine();
-            while(line != null) {
+            while (line != null) {
                 content.append(line);
                 content.append('\n');
                 line = reader.readLine();
@@ -109,4 +106,6 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
         }
         return content.toString();
     }
+
+    private static Logger log = Logger.getLogger(JWTAuthMechanismFactory.class);
 }

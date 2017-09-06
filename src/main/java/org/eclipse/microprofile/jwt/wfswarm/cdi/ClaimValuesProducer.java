@@ -21,9 +21,6 @@ import static org.eclipse.microprofile.jwt.wfswarm.cdi.MPJWTProducer.getValue;
  */
 @RequestScoped
 public class ClaimValuesProducer {
-    JsonWebToken jwt;
-    Object value;
-
     @PostConstruct
     void init() {
         jwt = getJWTPrincpal();
@@ -34,11 +31,13 @@ public class ClaimValuesProducer {
         getClaimValue(ip);
         return value;
     }
+
     @Produces
     Optional<Object> getOptionalValue(InjectionPoint ip) {
         getClaimValue(ip);
         return Optional.ofNullable(value);
     }
+
     @Produces
     ClaimValue<Object> getCV(InjectionPoint ip) {
         String name = getClaimValue(ip);
@@ -46,6 +45,7 @@ public class ClaimValuesProducer {
         cv.setValue(value);
         return cv;
     }
+
     @Produces
     ClaimValue<Optional<Object>> getOptionalCV(InjectionPoint ip) {
         String name = getClaimValue(ip);
@@ -58,11 +58,10 @@ public class ClaimValuesProducer {
         Annotated annotated = ip.getAnnotated();
         Claim claim = annotated.getAnnotation(Claim.class);
         String name = "";
-        if(claim != null) {
-            if(claim.standard() != Claims.UNKNOWN) {
+        if (claim != null) {
+            if (claim.standard() != Claims.UNKNOWN) {
                 name = claim.standard().name();
-            }
-            else {
+            } else {
                 name = claim.value();
             }
         }
@@ -70,4 +69,8 @@ public class ClaimValuesProducer {
         value = optValue.orElse(null);
         return name;
     }
+
+    JsonWebToken jwt;
+
+    Object value;
 }

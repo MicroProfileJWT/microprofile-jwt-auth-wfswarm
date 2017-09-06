@@ -14,12 +14,9 @@ import javax.enterprise.inject.spi.AnnotatedType;
 import org.eclipse.microprofile.jwt.Claim;
 
 public class DelegateAnnType<T> implements AnnotatedType<ClaimValuesProducer> {
-    AnnotatedType<ClaimValuesProducer> delegate;
-    HashSet<AnnotatedMethod<? super ClaimValuesProducer>> methods = new HashSet<>();
-
     DelegateAnnType(Claim claim, AnnotatedType<ClaimValuesProducer> delegate) {
         this.delegate = delegate;
-        for(AnnotatedMethod<? super ClaimValuesProducer> m : delegate.getMethods()) {
+        for (AnnotatedMethod<? super ClaimValuesProducer> m : delegate.getMethods()) {
             DelegateAnnMethod dm = new DelegateAnnMethod<T>(claim, (AnnotatedMethod<ClaimValuesProducer>) m);
             methods.add(dm);
         }
@@ -69,4 +66,8 @@ public class DelegateAnnType<T> implements AnnotatedType<ClaimValuesProducer> {
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) {
         return delegate.isAnnotationPresent(annotationType);
     }
+
+    AnnotatedType<ClaimValuesProducer> delegate;
+
+    HashSet<AnnotatedMethod<? super ClaimValuesProducer>> methods = new HashSet<>();
 }

@@ -6,15 +6,18 @@ import javax.enterprise.inject.spi.ProducerFactory;
 
 /**
  * The ProducerFactory for RawClaimProducer
+ *
  * @param <T>
  */
 public class RawClaimProducerFactory<T> implements ProducerFactory<RawClaimProducer> {
-    private MPJWTExtension.ClaimIP claimIP;
     RawClaimProducerFactory(MPJWTExtension.ClaimIP claimIP) {
         this.claimIP = claimIP;
     }
+
     @Override
     public <T1> Producer<T1> createProducer(Bean<T1> bean) {
         return new RawClaimProducer(claimIP);
     }
+
+    private MPJWTExtension.ClaimIP claimIP;
 }

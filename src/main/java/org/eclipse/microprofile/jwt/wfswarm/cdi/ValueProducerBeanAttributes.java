@@ -11,31 +11,27 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.BeanAttributes;
 import javax.enterprise.util.AnnotationLiteral;
 
-import org.eclipse.microprofile.jwt.Claim;
-
 /**
  * The BeanAttributes for the ClaimValueProducer and JsonValueProducer
  */
 public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
-    private final Set<Type> myTypes;
-    private final Set<Annotation> myQualifiers;
-    private final MPJWTExtension.ClaimIP claimIP;
-    private Class<? extends Annotation> scope = RequestScoped.class;
-
     public ValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP) {
         this(myTypes, claimIP, RequestScoped.class);
     }
+
     public ValueProducerBeanAttributes(Set<Type> myTypes, MPJWTExtension.ClaimIP claimIP, Class<? extends Annotation> scope) {
         this.myTypes = myTypes;
         this.myQualifiers = new HashSet<>();
         this.claimIP = claimIP;
         this.myQualifiers.add(claimIP.getClaim());
-        this.myQualifiers.add(new AnnotationLiteral<Any>(){});
+        this.myQualifiers.add(new AnnotationLiteral<Any>() {
+        });
         this.scope = scope;
     }
 
     /**
      * Set the producer method bean name to the claim name + the injection site type
+     *
      * @return producer method bean name
      */
     @Override
@@ -55,7 +51,7 @@ public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
     }
 
     @Override
-    public Set<Class<? extends Annotation>>	getStereotypes() {
+    public Set<Class<? extends Annotation>> getStereotypes() {
         return Collections.emptySet();
     }
 
@@ -73,5 +69,13 @@ public class ValueProducerBeanAttributes<T> implements BeanAttributes<T> {
     public String toString() {
         return String.format("ClaimValueProducer[%s]", getName());
     }
+
+    private final Set<Type> myTypes;
+
+    private final Set<Annotation> myQualifiers;
+
+    private final MPJWTExtension.ClaimIP claimIP;
+
+    private Class<? extends Annotation> scope = RequestScoped.class;
 
 }

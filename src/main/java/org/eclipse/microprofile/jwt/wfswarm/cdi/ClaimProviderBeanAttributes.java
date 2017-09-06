@@ -2,8 +2,6 @@ package org.eclipse.microprofile.jwt.wfswarm.cdi;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.BeanAttributes;
@@ -14,13 +12,13 @@ public class ClaimProviderBeanAttributes implements BeanAttributes<Object> {
      * from all injection points annotated with @ConfigProperty.
      *
      * @param delegate - the original producer method BeanAttributes
-     * @param types - the full set of @ConfigProperty injection point types
+     * @param types    - the full set of @ConfigProperty injection point types
      */
     public ClaimProviderBeanAttributes(BeanAttributes<Object> delegate, Set<Type> types, Set<Annotation> qualifiers) {
         this.delegate = delegate;
         this.types = types;
         this.qualifiers = qualifiers;
-        if(types.size() == 0) {
+        if (types.size() == 0) {
             Thread.dumpStack();
         }
     }
@@ -58,6 +56,7 @@ public class ClaimProviderBeanAttributes implements BeanAttributes<Object> {
     private BeanAttributes<Object> delegate;
 
     private Set<Type> types;
+
     private Set<Annotation> qualifiers;
 
 }

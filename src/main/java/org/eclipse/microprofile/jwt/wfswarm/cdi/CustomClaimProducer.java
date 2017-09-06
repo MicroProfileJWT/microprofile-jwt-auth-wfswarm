@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.json.JsonNumber;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
@@ -25,6 +24,7 @@ public class CustomClaimProducer {
         Object value = jwt.getClaim(name);
         return value;
     }
+
     @Claim("")
     @Dependent
     @Produces
@@ -37,13 +37,14 @@ public class CustomClaimProducer {
         Object value = jwt.getClaim(name);
         return Optional.ofNullable(value);
     }
+
     private String getName(InjectionPoint injectionPoint) {
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
             if (qualifier.annotationType().equals(Claim.class)) {
                 // Check for a non-default value
                 Claim claim = (Claim) qualifier;
                 String name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
-                if(name.length() == 0) {
+                if (name.length() == 0) {
                     //
                     name = injectionPoint.getMember().getName();
                 }

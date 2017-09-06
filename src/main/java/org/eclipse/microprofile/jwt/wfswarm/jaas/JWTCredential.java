@@ -12,13 +12,7 @@ import org.jose4j.jwt.consumer.JwtContext;
  * needed for validation of the token.
  */
 public class JWTCredential implements Credential {
-    private JWTAuthContextInfo authContextInfo;
-    private String bearerToken;
-    private String name;
-    private Exception jwtException;
-
     /**
-     *
      * @param bearerToken
      * @param authContextInfo
      */
@@ -40,7 +34,7 @@ public class JWTCredential implements Credential {
      * @return the name to use for the principal
      */
     public String getName() {
-        if(name == null) {
+        if (name == null) {
             name = "INVALID_TOKEN_NAME";
             try {
                 // Build a JwtConsumer that doesn't check signatures or do any validation.
@@ -55,9 +49,9 @@ public class JWTCredential implements Credential {
                 JwtClaims claimsSet = jwtContext.getJwtClaims();
                 // We have to determine the unique name to use as the principal name. It comes from upn, preferred_username, sub in that order
                 name = claimsSet.getClaimValue("upn", String.class);
-                if(name == null) {
+                if (name == null) {
                     name = claimsSet.getClaimValue("preferred_username", String.class);
-                    if(name == null) {
+                    if (name == null) {
                         name = claimsSet.getSubject();
                     }
                 }
@@ -67,9 +61,11 @@ public class JWTCredential implements Credential {
         }
         return name;
     }
+
     public String getBearerToken() {
         return bearerToken;
     }
+
     public JWTAuthContextInfo getAuthContextInfo() {
         return authContextInfo;
     }
@@ -77,4 +73,12 @@ public class JWTCredential implements Credential {
     public Exception getJwtException() {
         return jwtException;
     }
+
+    private JWTAuthContextInfo authContextInfo;
+
+    private String bearerToken;
+
+    private String name;
+
+    private Exception jwtException;
 }

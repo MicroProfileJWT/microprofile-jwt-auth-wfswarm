@@ -15,22 +15,19 @@ import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
  * This does not work for the non-proxyable types
+ *
  * @param <T> claim type
  */
 @RequestScoped
 public class RawClaimProducer<T> implements Producer<T> {
-    private MPJWTExtension.ClaimIP claimIP;
-    private Type type;
-    private Type valueType;
-
     RawClaimProducer(MPJWTExtension.ClaimIP claimIP) {
         this.claimIP = claimIP;
         HashSet<Type> types = new HashSet<>();
-        for(InjectionPoint ip : claimIP.getInjectionPoints()) {
+        for (InjectionPoint ip : claimIP.getInjectionPoints()) {
             types.add(ip.getType());
         }
         // Verify that there is only one type this producer is dealing with
-        if(types.size() > 1) {
+        if (types.size() > 1) {
             throw new IllegalStateException(String.format("Multiple injection point types: %s for claim: %s", types, claimIP.getClaim().value()));
         }
         this.type = types.iterator().next();
@@ -39,6 +36,7 @@ public class RawClaimProducer<T> implements Producer<T> {
             valueType = ((ParameterizedType) type).getActualTypeArguments()[0];
         }
     }
+
     @Override
     public T produce(CreationalContext<T> ctx) {
         System.out.printf("RawClaimProducer(%s).produce\n", claimIP);
@@ -57,5 +55,11 @@ public class RawClaimProducer<T> implements Producer<T> {
     public Set<InjectionPoint> getInjectionPoints() {
         return claimIP.getInjectionPoints();
     }
+
+    private MPJWTExtension.ClaimIP claimIP;
+
+    private Type type;
+
+    private Type valueType;
 
 }

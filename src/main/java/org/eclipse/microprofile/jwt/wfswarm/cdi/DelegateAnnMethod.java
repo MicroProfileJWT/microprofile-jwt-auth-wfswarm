@@ -15,12 +15,10 @@ import org.eclipse.microprofile.jwt.Claim;
 
 /**
  * prototype override of AnnotatedMethod to add the correct Claim annotation
+ *
  * @param <T>
  */
 public class DelegateAnnMethod<T> implements AnnotatedMethod<ClaimValuesProducer> {
-    private AnnotatedMethod<ClaimValuesProducer> delegate;
-    private HashSet<Annotation> annotations = new HashSet<>();
-
     public DelegateAnnMethod(Claim claim, AnnotatedMethod<ClaimValuesProducer> delegate) {
         this.delegate = delegate;
         this.annotations.addAll(delegate.getAnnotations());
@@ -60,8 +58,8 @@ public class DelegateAnnMethod<T> implements AnnotatedMethod<ClaimValuesProducer
     @Override
     public <A extends Annotation> A getAnnotation(Class<A> annotationType) {
         A match = null;
-        for(Annotation a : annotations) {
-            if(a.annotationType().isAssignableFrom(annotationType)) {
+        for (Annotation a : annotations) {
+            if (a.annotationType().isAssignableFrom(annotationType)) {
                 match = (A) a;
                 break;
             }
@@ -78,4 +76,8 @@ public class DelegateAnnMethod<T> implements AnnotatedMethod<ClaimValuesProducer
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) {
         return annotations.contains(annotationType);
     }
+
+    private AnnotatedMethod<ClaimValuesProducer> delegate;
+
+    private HashSet<Annotation> annotations = new HashSet<>();
 }
